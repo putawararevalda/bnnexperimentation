@@ -10,6 +10,7 @@ from custoptimizer import SGLD  # Assuming you have a custom SGLD optimizer
 import matplotlib.pyplot as plt
 from datetime import datetime
 import json
+import os
 
 #ensure reproducibility
 torch.manual_seed(0)
@@ -144,7 +145,7 @@ def main():
     optimizer = SGLD(model.parameters(), lr=1e-4, weight_decay=1e-4)
     optimizer_name = optimizer.__class__.__name__
 
-    designated_epochs = 100
+    designated_epochs = 3
     loss_history = []
 
     start_time = time.time()
@@ -177,10 +178,10 @@ def main():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     png_filename = f"{timestamp}.png"
     json_filename = f"{timestamp}.json"
-    plt.savefig(png_filename)
+    plt.savefig(os.path.join("results",png_filename))
     plt.close()
     
-    with open(json_filename, "w") as f:
+    with open(os.path.join("results",json_filename), "w") as f:
         json.dump({"loss": loss_history}, f)
 
     #print the weight before and after SEU injection
