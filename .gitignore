@@ -5,3 +5,6 @@ __pycache__/
 data/
 results/
 results_eurosat/
+.env
+datasplit/
+predictions_*.csv

@@ -26,9 +26,9 @@ class BayesianLinear(nn.Module):
         self.out_features = out_features
 
         self.weight_mu = nn.Parameter(torch.Tensor(out_features, in_features).uniform_(-0.2, 0.2))
-        self.weight_log_sigma = nn.Parameter(torch.Tensor(out_features, in_features).fill_(-5))
+        self.weight_log_sigma = nn.Parameter(torch.Tensor(out_features, in_features).fill_(-3)) #formerly -5
         self.bias_mu = nn.Parameter(torch.Tensor(out_features).uniform_(-0.2, 0.2))
-        self.bias_log_sigma = nn.Parameter(torch.Tensor(out_features).fill_(-5))
+        self.bias_log_sigma = nn.Parameter(torch.Tensor(out_features).fill_(-3)) #formerly -5
 
         self.prior_std = prior_std
 
@@ -160,7 +160,7 @@ def main():
     #optimizer = SGLD(model.parameters(), lr=1e-4, weight_decay=1e-4)
     optimizer_name = optimizer.__class__.__name__
 
-    designated_epochs = 3
+    designated_epochs = 30
     loss_history = []
 
     start_time = time.time()
@@ -198,6 +198,10 @@ def main():
     
     with open(os.path.join("results_eurosat",json_filename), "w") as f:
         json.dump({"loss": loss_history}, f)
+
+    model_save_name = f"bnn_eurosat_{timestamp}.pth"
+    torch.save(model.state_dict(), os.path.join("results_eurosat",model_save_name))
+    print("Model saved to results_eurosat/" + model_save_name)
 
 if __name__ == "__main__":
     main()
