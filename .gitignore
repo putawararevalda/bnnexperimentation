@@ -8,3 +8,4 @@ results_eurosat/
 .env
 datasplit/
 predictions_*.csv
+pyro_result
