@@ -9,3 +9,5 @@ results_eurosat/
 datasplit/
 predictions_*.csv
 pyro_result
+tasmim.ipynb
+tasmim_cnn.ipynb

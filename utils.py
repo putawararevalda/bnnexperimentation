@@ -38,5 +38,5 @@ class BayesianCNN1FC(PyroModule):
     
 if __name__ == "__main__":
     # if imported as a module, this block will not run
-    model = BayesianCNN()
+    model = BayesianCNN1FC()
     print(model)
