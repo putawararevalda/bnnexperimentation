@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pyro
 import pyro.distributions as dist
+import torch
 
 class BayesianCNN1FC(PyroModule):
     def __init__(self):
@@ -35,6 +36,8 @@ class BayesianCNN1FC(PyroModule):
             with pyro.plate("data", x.size(0)):
                 pyro.sample("obs", dist.Categorical(logits=logits), obs=y)
         return logits
+    
+
     
 if __name__ == "__main__":
     # if imported as a module, this block will not run
