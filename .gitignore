@@ -11,3 +11,4 @@ predictions_*.csv
 pyro_result
 tasmim.ipynb
 tasmim_cnn.ipynb
+tasmim_gpu.ipynb
