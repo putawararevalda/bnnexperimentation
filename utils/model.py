@@ -201,6 +201,47 @@ class BayesianCNNSingleFCCustomWGBN(PyroModule):
                 pyro.sample("obs", dist.Categorical(logits=logits), obs=y)
 
         return logits
+    
+class LaplaceBayesianCNNSingleFCCustomWGBN(PyroModule):
+    def __init__(self, num_classes, mu, sigma, device):
+        super().__init__()
+
+        prior_mu = mu
+        prior_sigma = torch.tensor(sigma, device=device)
+
+        self.conv1 = PyroModule[nn.Conv2d](3, 32, kernel_size=5, stride=1, padding=2)
+        self.conv1.weight = PyroSample(dist.Laplace(prior_mu, prior_sigma).expand([32, 3, 5, 5]).to_event(4))
+        self.conv1.bias = PyroSample(dist.Laplace(prior_mu, prior_sigma).expand([32]).to_event(1))
+
+        self.bn1 = nn.BatchNorm2d(32)
+
+        self.conv2 = PyroModule[nn.Conv2d](32, 64, kernel_size=5, stride=1, padding=2)
+        self.conv2.weight = PyroSample(dist.Laplace(prior_mu, prior_sigma).expand([64, 32, 5, 5]).to_event(4))
+        self.conv2.bias = PyroSample(dist.Laplace(prior_mu, prior_sigma).expand([64]).to_event(1))
+
+        self.bn2 = nn.BatchNorm2d(64)
+
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
+        self.fc1 = PyroModule[nn.Linear](64 * 16 * 16, num_classes)
+        self.fc1.weight = PyroSample(dist.Laplace(prior_mu, prior_sigma).expand([num_classes, 64 * 16 * 16]).to_event(2))
+        self.fc1.bias = PyroSample(dist.Laplace(prior_mu, prior_sigma).expand([num_classes]).to_event(1))
+
+    def actWG(self, x, alpha=1.0):
+        return x * torch.exp(-alpha * x**2)
+
+    def forward(self, x, y=None):
+        x = self.pool(self.actWG(self.bn1(self.conv1(x))))  # Conv1 + BN + WG + Pool
+        x = self.pool(self.actWG(self.bn2(self.conv2(x))))  # Conv2 + BN + WG + Pool
+        x = x.view(x.size(0), -1)
+        logits = self.fc1(x)
+
+        if y is not None:
+            with pyro.plate("data", x.shape[0]):
+                pyro.sample("obs", dist.Categorical(logits=logits), obs=y)
+
+        return logits
+
 
 
 class PoolBayesianCNNSingleFCCustom(PyroModule):
