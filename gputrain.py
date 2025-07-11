@@ -246,6 +246,7 @@ if __name__ == "__main__":
     send_telegram_message(
         title="Training Completed for Experiment " + experiment_serial,
         message=f"Training configuration: \n{config}\n"
+                f"Train acuracies: {accuracies}\n"
                 f"Best training accuracy: {max(accuracies) * 100:.6f}%\n"
                 f"At epoch: {accuracy_epochs[np.argmax(accuracies)]}\n"
                 f"Confusion Matrix Accuracy: {accuracy * 100:.6f}%\n"
