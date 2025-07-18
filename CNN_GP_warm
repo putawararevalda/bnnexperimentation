@@ -1,0 +1,639 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "52802205",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import torch\n",
+    "import torch.nn as nn\n",
+    "import torch.nn.functional as F\n",
+    "import torchvision.datasets as datasets\n",
+    "import torchvision.transforms as transforms\n",
+    "from torch.utils.data import DataLoader, random_split\n",
+    "import time\n",
+    "import matplotlib.pyplot as plt\n",
+    "import os\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from torch.utils.data import Subset\n",
+    "import torch\n",
+    "\n",
+    "import pickle"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "ce791038",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\"\\nclass BaselineCNN(nn.Module):\\n    def __init__(self, input_shape, num_classes):\\n        super().__init__()\\n        self.input_shape = input_shape  # (C, H, W) format for PyTorch\\n        self.num_classes = num_classes\\n\\n        # Conv layers with same padding (kernel_size=3, padding=1)\\n        self.conv1 = nn.Conv2d(input_shape[0], 32, kernel_size=3, padding=1)\\n        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)\\n        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)\\n        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, padding=1)\\n        self.conv5 = nn.Conv2d(128, 64, kernel_size=3, padding=1)\\n        self.conv6 = nn.Conv2d(64, 32, kernel_size=3, padding=1)\\n\\n        # MaxPooling layer\\n        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)\\n\\n        # Dropout layers\\n        self.dropout = nn.Dropout(0.3)\\n\\n        # Global Average Pooling equivalent\\n        self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))\\n\\n        # Dense/Linear layers\\n        self.fc1 = nn.Linear(32, 64)\\n        self.fc2 = nn.Linear(64, num_classes)\\n\\n    def forward(self, x):\\n        # Conv + Pool blocks\\n        x = self.pool(F.relu(self.conv1(x)))      # 32 channels\\n        x = self.pool(F.relu(self.conv2(x)))      # 64 channels\\n        x = self.pool(F.relu(self.conv3(x)))      # 128 channels\\n        x = self.dropout(x)\\n        x = self.pool(F.relu(self.conv4(x)))      # 128 channels\\n        x = self.dropout(x)\\n        x = self.pool(F.relu(self.conv5(x)))      # 64 channels\\n        x = self.pool(F.relu(self.conv6(x)))      # 32 channels\\n\\n        # Global Average Pooling\\n        x = self.global_avg_pool(x)               # Shape: (batch, 32, 1, 1)\\n        x = x.view(x.size(0), -1)                 # Flatten: (batch, 32)\\n\\n        # Dense layers\\n        x = F.relu(self.fc1(x))                   # 64 units\\n        x = self.fc2(x)                           # num_classes units\\n\\n        return x\\n'"
+      ]
+     },
+     "execution_count": 2,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "\"\"\"\"\n",
+    "class BaselineCNN(nn.Module):\n",
+    "    def __init__(self, input_shape, num_classes):\n",
+    "        super().__init__()\n",
+    "        self.input_shape = input_shape  # (C, H, W) format for PyTorch\n",
+    "        self.num_classes = num_classes\n",
+    "        \n",
+    "        # Conv layers with same padding (kernel_size=3, padding=1)\n",
+    "        self.conv1 = nn.Conv2d(input_shape[0], 32, kernel_size=3, padding=1)\n",
+    "        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)\n",
+    "        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)\n",
+    "        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, padding=1)\n",
+    "        self.conv5 = nn.Conv2d(128, 64, kernel_size=3, padding=1)\n",
+    "        self.conv6 = nn.Conv2d(64, 32, kernel_size=3, padding=1)\n",
+    "        \n",
+    "        # MaxPooling layer\n",
+    "        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)\n",
+    "        \n",
+    "        # Dropout layers\n",
+    "        self.dropout = nn.Dropout(0.3)\n",
+    "        \n",
+    "        # Global Average Pooling equivalent\n",
+    "        self.global_avg_pool = nn.AdaptiveAvgPool2d((1, 1))\n",
+    "        \n",
+    "        # Dense/Linear layers\n",
+    "        self.fc1 = nn.Linear(32, 64)\n",
+    "        self.fc2 = nn.Linear(64, num_classes)\n",
+    "        \n",
+    "    def forward(self, x):\n",
+    "        # Conv + Pool blocks\n",
+    "        x = self.pool(F.relu(self.conv1(x)))      # 32 channels\n",
+    "        x = self.pool(F.relu(self.conv2(x)))      # 64 channels\n",
+    "        x = self.pool(F.relu(self.conv3(x)))      # 128 channels\n",
+    "        x = self.dropout(x)\n",
+    "        x = self.pool(F.relu(self.conv4(x)))      # 128 channels\n",
+    "        x = self.dropout(x)\n",
+    "        x = self.pool(F.relu(self.conv5(x)))      # 64 channels\n",
+    "        x = self.pool(F.relu(self.conv6(x)))      # 32 channels\n",
+    "        \n",
+    "        # Global Average Pooling\n",
+    "        x = self.global_avg_pool(x)               # Shape: (batch, 32, 1, 1)\n",
+    "        x = x.view(x.size(0), -1)                 # Flatten: (batch, 32)\n",
+    "        \n",
+    "        # Dense layers\n",
+    "        x = F.relu(self.fc1(x))                   # 64 units\n",
+    "        x = self.fc2(x)                           # num_classes units\n",
+    "        \n",
+    "        return x\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "50cbb194",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import torch\n",
+    "import torch.nn as nn\n",
+    "import torch.nn.functional as F\n",
+    "\n",
+    "class DeterministicCNNSingleFCTanh(nn.Module):\n",
+    "    def __init__(self, num_classes):\n",
+    "        super().__init__()\n",
+    "\n",
+    "        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2)\n",
+    "        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2)\n",
+    "\n",
+    "        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)\n",
+    "        self.gap = nn.AdaptiveAvgPool2d((1, 1))\n",
+    "\n",
+    "        self.fc1 = nn.Linear(64, num_classes)\n",
+    "\n",
+    "    def forward(self, x):\n",
+    "        # x: [B, 3, 64, 64]\n",
+    "        x = self.pool(F.tanh(self.conv1(x)))  # → [B, 32, 32, 32]\n",
+    "        x = self.pool(F.tanh(self.conv2(x)))  # → [B, 64, 16, 16]\n",
+    "        x = self.gap(x)                       # → [B, 64, 1, 1]\n",
+    "        x = x.view(x.size(0), -1)             # → [B, 64]\n",
+    "        logits = self.fc1(x)                  # → [B, num_classes]\n",
+    "        return logits\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "7fc2daaf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "device = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\n",
+    "#device = \"cpu\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "0d3b52e7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def load_data(batch_size=64):  # Changed from 54 to 64 to match deterministic CNN\n",
+    "    transform = transforms.Compose([\n",
+    "        transforms.Resize((64, 64)),\n",
+    "        transforms.ToTensor(),\n",
+    "        transforms.Normalize(mean=[0.3444, 0.3809, 0.4082], std=[0.1809, 0.1331, 0.1137])\n",
+    "    ])\n",
+    "\n",
+    "    dataset = datasets.EuroSAT(root='./data', transform=transform, download=False)\n",
+    "\n",
+    "    # Use fixed random seed for reproducible splits\n",
+    "    torch.manual_seed(42)\n",
+    "    train_size = int(0.8 * len(dataset))\n",
+    "    test_size = len(dataset) - train_size\n",
+    "    train_dataset, test_dataset = random_split(dataset, [train_size, test_size])\n",
+    "\n",
+    "    #with open('datasplit/split_indices.pkl', 'rb') as f:\n",
+    "    #    split = pickle.load(f)\n",
+    "    #    train_dataset = Subset(dataset, split['train'])\n",
+    "    #    test_dataset = Subset(dataset, split['test'])\n",
+    "\n",
+    "    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, \n",
+    "                             num_workers=4, pin_memory=True, persistent_workers=True)\n",
+    "    test_loader = DataLoader(test_dataset, batch_size=batch_size,\n",
+    "                            num_workers=4, pin_memory=True, persistent_workers=True)\n",
+    "    return train_loader, test_loader"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "945c6002",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# train the CNN model in 10 epoch\n",
+    "def train_cnn(model, train_loader, num_epochs=10):\n",
+    "    model.train()\n",
+    "    criterion = nn.CrossEntropyLoss()\n",
+    "    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)\n",
+    "\n",
+    "    for epoch in range(num_epochs):\n",
+    "        running_loss = 0.0\n",
+    "        for images, labels in train_loader:\n",
+    "            images, labels = images.to(device), labels.to(device)\n",
+    "            \n",
+    "            optimizer.zero_grad()\n",
+    "            outputs = model(images)\n",
+    "            loss = criterion(outputs, labels)\n",
+    "            loss.backward()\n",
+    "            optimizer.step()\n",
+    "            \n",
+    "            running_loss += loss.item() * images.size(0)\n",
+    "        \n",
+    "        epoch_loss = running_loss / len(train_loader.dataset)\n",
+    "        print(f\"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}\")\n",
+    "    \n",
+    "    print(\"Training complete.\")\n",
+    "\n",
+    "# Evaluate the CNN model\n",
+    "def evaluate_cnn(model, test_loader):\n",
+    "    model.eval()\n",
+    "    correct = 0\n",
+    "    total = 0\n",
+    "\n",
+    "    with torch.no_grad():\n",
+    "        for images, labels in test_loader:\n",
+    "            images, labels = images.to(device), labels.to(device)\n",
+    "            outputs = model(images)\n",
+    "            _, predicted = torch.max(outputs.data, 1)\n",
+    "            total += labels.size(0)\n",
+    "            correct += (predicted == labels).sum().item()\n",
+    "\n",
+    "    accuracy = 100 * correct / total\n",
+    "    print(f\"Test Accuracy: {accuracy:.2f}%\")\n",
+    "    return accuracy"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c025c29a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_cnn = DeterministicCNNSingleFCTanh(num_classes=10).to(device)\n",
+    "train_loader, test_loader = load_data(batch_size=54)  # Use batch size of 64 for CNN\n",
+    "train_cnn(model_cnn, train_loader, num_epochs=100)\n",
+    "accuracy_tanh = evaluate_cnn(model_cnn, test_loader)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "572a8610",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# print the model weights' and bias' mean and std for each layer, save it into a dict and print the dict\n",
+    "\n",
+    "weight_stats = {}\n",
+    "for name, param in model_cnn.named_parameters():\n",
+    "    if 'weight' in name or 'bias' in name:\n",
+    "        weight_stats[name] = {\n",
+    "            'mean': param.data.mean().item(),\n",
+    "            'std': param.data.std().item()\n",
+    "        }"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8dfe74b3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "weight_stats"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7c4dca3a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "for name, param in model_cnn.named_parameters():\n",
+    "    if 'weight' in name or 'bias' in name:\n",
+    "        plt.figure(figsize=(10, 5))\n",
+    "        plt.hist(param.data.cpu().numpy().flatten(), bins=50, alpha=0.7)\n",
+    "        plt.title(f'Histogram of {name}')\n",
+    "        plt.xlabel('Value')\n",
+    "        plt.ylabel('Frequency')\n",
+    "        plt.grid()\n",
+    "        plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "55a73fd1",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# plot the histogram of the weights and biases\n",
+    "# also show a line curve that shows normal distribution\n",
+    "import numpy as np\n",
+    "\n",
+    "for name, param in model_cnn.named_parameters():\n",
+    "    if 'weight' in name or 'bias' in name:\n",
+    "        plt.figure(figsize=(10, 5))\n",
+    "        plt.hist(param.data.cpu().numpy().flatten(), bins=50, alpha=0.7)\n",
+    "        # show normal distribution lines\n",
+    "        mean = weight_stats[name]['mean']\n",
+    "        std = weight_stats[name]['std']\n",
+    "        x = np.linspace(mean - 3*std, mean + 3*std, 100)\n",
+    "        normal_dist = (1 / (std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / std) ** 2)\n",
+    "        plt.plot(x, normal_dist * len(param.data.cpu().numpy().flatten()) * (x[1] - x[0]), color='red', linewidth=2)\n",
+    "        # show mean and std lines\n",
+    "        #plt.axvline(weight_stats[name]['mean'], color='r', linestyle='dashed', linewidth=1)\n",
+    "        #plt.axvline(weight_stats[name]['mean'] + weight_stats[name]['std'], color='g', linestyle='dashed', linewidth=1)\n",
+    "        #plt.axvline(weight_stats[name]['mean'] - weight_stats[name]['std'], color='g', linestyle='dashed', linewidth=1)\n",
+    "        # add the title with mean and std in it\n",
+    "        plt.title(f'Histogram of {name} (mean: {weight_stats[name][\"mean\"]:.4f}, std: {weight_stats[name][\"std\"]:.4f})')\n",
+    "        #plt.title(f'Histogram of {name}')\n",
+    "        plt.xlabel('Value')\n",
+    "        plt.ylabel('Frequency')\n",
+    "        plt.grid()\n",
+    "        plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e7986691",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# print all the weights and bias, without aggregating them\n",
+    "for name, param in model_cnn.named_parameters():\n",
+    "    if 'weight' in name or 'bias' in name:\n",
+    "        print(f\"{name}: {param.data.cpu().numpy().flatten()}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "4c2b9e87",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class DeterministicCNNSingleFCRelu(nn.Module):\n",
+    "    def __init__(self, num_classes):\n",
+    "        super().__init__()\n",
+    "\n",
+    "        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2)\n",
+    "        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2)\n",
+    "\n",
+    "        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)\n",
+    "        self.gap = nn.AdaptiveAvgPool2d((1, 1))\n",
+    "\n",
+    "        self.fc1 = nn.Linear(64, num_classes)\n",
+    "\n",
+    "    def forward(self, x):\n",
+    "        # x: [B, 3, 64, 64]\n",
+    "        x = self.pool(F.relu(self.conv1(x)))  # → [B, 32, 32, 32]\n",
+    "        x = self.pool(F.relu(self.conv2(x)))  # → [B, 64, 16, 16]\n",
+    "        x = self.gap(x)                       # → [B, 64, 1, 1]\n",
+    "        x = x.view(x.size(0), -1)             # → [B, 64]\n",
+    "        logits = self.fc1(x)                  # → [B, num_classes]\n",
+    "        return logits"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "48dc0669",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Epoch [1/10], Loss: 1.2118\n",
+      "Epoch [2/10], Loss: 0.8230\n",
+      "Epoch [3/10], Loss: 0.7043\n",
+      "Epoch [4/10], Loss: 0.6333\n",
+      "Epoch [5/10], Loss: 0.5792\n",
+      "Epoch [6/10], Loss: 0.5528\n",
+      "Epoch [7/10], Loss: 0.5285\n",
+      "Epoch [8/10], Loss: 0.5027\n",
+      "Epoch [9/10], Loss: 0.4836\n",
+      "Epoch [10/10], Loss: 0.4630\n",
+      "Training complete.\n",
+      "Test Accuracy: 82.65%\n"
+     ]
+    }
+   ],
+   "source": [
+    "model_cnn = DeterministicCNNSingleFCRelu(num_classes=10).to(device)\n",
+    "train_loader, test_loader = load_data(batch_size=54)  # Use batch size of 64 for CNN\n",
+    "train_cnn(model_cnn, train_loader, num_epochs=10)\n",
+    "accuracy_relu = evaluate_cnn(model_cnn, test_loader)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "0539bd84",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "w_star = { name: param.detach().clone() \n",
+    "           for name, param in model_cnn.named_parameters() }\n",
+    "\n",
+    "# helper to invert softplus\n",
+    "def inv_softplus(x):\n",
+    "    return x + torch.log(-torch.expm1(-x))\n",
+    "\n",
+    "# small initial posterior std\n",
+    "init_eps = 0.05\n",
+    "raw_init = inv_softplus(torch.tensor(init_eps))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "5395430f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "torch.save(w_star, \"w_star.pth\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ed7c2fc3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class DeterministicCNNSingleFCSigmoid(nn.Module):\n",
+    "    def __init__(self, num_classes):\n",
+    "        super().__init__()\n",
+    "\n",
+    "        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2)\n",
+    "        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2)\n",
+    "\n",
+    "        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)\n",
+    "        self.gap = nn.AdaptiveAvgPool2d((1, 1))\n",
+    "\n",
+    "        self.fc1 = nn.Linear(64, num_classes)\n",
+    "\n",
+    "    def forward(self, x):\n",
+    "        # x: [B, 3, 64, 64]\n",
+    "        x = self.pool(F.sigmoid(self.conv1(x)))  # → [B, 32, 32, 32]\n",
+    "        x = self.pool(F.sigmoid(self.conv2(x)))  # → [B, 64, 16, 16]\n",
+    "        x = self.gap(x)                       # → [B, 64, 1, 1]\n",
+    "        x = x.view(x.size(0), -1)             # → [B, 64]\n",
+    "        logits = self.fc1(x)                  # → [B, num_classes]\n",
+    "        return logits"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3d7358b3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_cnn = DeterministicCNNSingleFCSigmoid(num_classes=10).to(device)\n",
+    "train_loader, test_loader = load_data(batch_size=54)  # Use batch size of 64 for CNN\n",
+    "train_cnn(model_cnn, train_loader, num_epochs=100)\n",
+    "accuracy_sigmoid = evaluate_cnn(model_cnn, test_loader)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b641e3f9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class DeterministicCNNSingleFCSin(nn.Module):\n",
+    "    def __init__(self, num_classes):\n",
+    "        super().__init__()\n",
+    "\n",
+    "        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2)\n",
+    "        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2)\n",
+    "\n",
+    "        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)\n",
+    "        self.gap = nn.AdaptiveAvgPool2d((1, 1))\n",
+    "\n",
+    "        self.fc1 = nn.Linear(64, num_classes)\n",
+    "\n",
+    "    def forward(self, x):\n",
+    "        # x: [B, 3, 64, 64]\n",
+    "        x = self.pool(torch.sin(self.conv1(x)))  # → [B, 32, 32, 32]\n",
+    "        x = self.pool(torch.sin(self.conv2(x)))  # → [B, 64, 16, 16]\n",
+    "        x = self.gap(x)                       # → [B, 64, 1, 1]\n",
+    "        x = x.view(x.size(0), -1)             # → [B, 64]\n",
+    "        logits = self.fc1(x)                  # → [B, num_classes]\n",
+    "        return logits"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "98244487",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_cnn = DeterministicCNNSingleFCSin(num_classes=10).to(device)\n",
+    "train_loader, test_loader = load_data(batch_size=54)  # Use batch size of 64 for CNN\n",
+    "train_cnn(model_cnn, train_loader, num_epochs=100)\n",
+    "accuracy_sin = evaluate_cnn(model_cnn, test_loader)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c630b671",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class DeterministicCNNSingleFCWG(nn.Module):\n",
+    "    def __init__(self, num_classes):\n",
+    "        super().__init__()\n",
+    "\n",
+    "        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2)\n",
+    "        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2)\n",
+    "\n",
+    "        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)\n",
+    "        self.gap = nn.AdaptiveAvgPool2d((1, 1))\n",
+    "\n",
+    "        self.fc1 = nn.Linear(64, num_classes)\n",
+    "    \n",
+    "    def actWG(self, x, alpha=1.0):\n",
+    "        return x * torch.exp(-alpha * x**2)\n",
+    "\n",
+    "    def forward(self, x):\n",
+    "        # x: [B, 3, 64, 64]\n",
+    "        x = self.pool(self.actWG(self.conv1(x)))  # → [B, 32, 32, 32]\n",
+    "        x = self.pool(self.actWG(self.conv2(x)))  # → [B, 64, 16, 16]\n",
+    "        x = self.gap(x)                       # → [B, 64, 1, 1]\n",
+    "        x = x.view(x.size(0), -1)             # → [B, 64]\n",
+    "        logits = self.fc1(x)                  # → [B, num_classes]\n",
+    "        return logits"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "33b7aa45",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_cnn = DeterministicCNNSingleFCWG(num_classes=10).to(device)\n",
+    "train_loader, test_loader = load_data(batch_size=54)  # Use batch size of 64 for CNN\n",
+    "train_cnn(model_cnn, train_loader, num_epochs=100)\n",
+    "accuracy_WG = evaluate_cnn(model_cnn, test_loader)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "40653224",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "class DeterministicCNNSingleFCRWG(nn.Module):\n",
+    "    def __init__(self, num_classes):\n",
+    "        super().__init__()\n",
+    "\n",
+    "        self.conv1 = nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2)\n",
+    "        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2)\n",
+    "\n",
+    "        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)\n",
+    "        self.gap = nn.AdaptiveAvgPool2d((1, 1))\n",
+    "\n",
+    "        self.fc1 = nn.Linear(64, num_classes)\n",
+    "    \n",
+    "    def actRWG(self, x, alpha=1.0):\n",
+    "        return max(0,x * torch.exp(-alpha * x**2))\n",
+    "\n",
+    "    def forward(self, x):\n",
+    "        # x: [B, 3, 64, 64]\n",
+    "        x = self.pool(self.actWG(self.conv1(x)))  # → [B, 32, 32, 32]\n",
+    "        x = self.pool(self.actWG(self.conv2(x)))  # → [B, 64, 16, 16]\n",
+    "        x = self.gap(x)                       # → [B, 64, 1, 1]\n",
+    "        x = x.view(x.size(0), -1)             # → [B, 64]\n",
+    "        logits = self.fc1(x)                  # → [B, num_classes]\n",
+    "        return logits"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c0acc514",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model_cnn = DeterministicCNNSingleFCWG(num_classes=10).to(device)\n",
+    "train_loader, test_loader = load_data(batch_size=54)  # Use batch size of 64 for CNN\n",
+    "train_cnn(model_cnn, train_loader, num_epochs=100)\n",
+    "accuracy_rwg = evaluate_cnn(model_cnn, test_loader)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5d3b7210",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#print all accuracies\n",
+    "print(f\"Accuracy with Tanh activation: {accuracy_tanh:.2f}%\")\n",
+    "print(f\"Accuracy with ReLU activation: {accuracy_relu:.2f}%\")\n",
+    "print(f\"Accuracy with Sigmoid activation: {accuracy_sigmoid:.2f}%\")\n",
+    "print(f\"Accuracy with Sin activation: {accuracy_sin:.2f}%\")\n",
+    "print(f\"Accuracy with WG activation: {accuracy_WG:.2f}%\")\n",
+    "print(f\"Accuracy with RWG activation: {accuracy_rwg:.2f}%\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "05961141",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "bnntest",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.13"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

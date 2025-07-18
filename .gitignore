@@ -5,10 +5,14 @@ __pycache__/
 data/
 results/
 results_eurosat/
+results_GP_eurosat/
+results_*/
 .env
 datasplit/
+inj_base_*/
 predictions_*.csv
 pyro_result
 tasmim.ipynb
 tasmim_cnn.ipynb
 tasmim_gpu.ipynb
+kaggle.json

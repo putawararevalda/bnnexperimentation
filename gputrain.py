@@ -42,8 +42,10 @@ parser = argparse.ArgumentParser(description='Train Bayesian Neural Net on EuroS
 
 parser.add_argument('--epochs', type=int, nargs='?', action='store', default=10,
                     help='How many epochs to train. Default: 10.')
+parser.add_argument('--variant', type=str, nargs='?', action='store', default='Base',
+                    help='Model variant to choose from. Options are \'Base\', \'Adaptive\'. Default: \'Base\'')
 parser.add_argument('--prior', type=str, nargs='?', action='store', default='Gaussian_prior',
-                    help='Model prior to choose from. Options are \'Gaussian_prior\', \'Laplace_prior\'. Default: \'Gaussian_prior\'')
+                    help='Model prior to choose from. Options are \'Gaussian_prior\', \'Laplace_prior\', \'Uniform_prior\'. Default: \'Gaussian_prior\'')
 parser.add_argument('--mu', type=float, nargs='?', action='store', default=0.0,
                     help='Mean parameter for prior distribution. Default: 0.0')
 parser.add_argument('--sigma', type=float, nargs='?', action='store', default=10.0,
@@ -153,27 +155,58 @@ def predict_data(model, loader_of_interest, num_samples=10):
     return all_labels, all_predictions
 
 from utils.function import load_data, train_svi_with_stats, plot_training_results_with_stats, send_telegram_message
+from utils.model import BayesianCNNSingleFCCustomAdaptive, LaplaceBayesianCNNSingleFCCustomAdaptive, BaseBayesianCNNSingleFCCustom
 
 if __name__ == "__main__":
     # Load data
     experiment_serial = time.strftime("%Y%m%d-%H%M%S")
     
-
     # Define model
     num_classes = 10
     
     if args.prior == 'Gaussian_prior':
-        bayesian_model = BayesianCNNSingleFCCustom(num_classes=num_classes,
-                                        mu=args.mu,
-                                        sigma=args.sigma,
-                                        device=device).to(device)
+        if args.variant == 'Base':
+            bayesian_model = BayesianCNNSingleFCCustom(num_classes=num_classes,
+                                            mu=args.mu,
+                                            sigma=args.sigma,
+                                            device=device).to(device)
+        elif args.variant == 'Adaptive':
+            bayesian_model = BayesianCNNSingleFCCustomAdaptive(num_classes=num_classes,
+                                            mu=args.mu,
+                                            sigma=args.sigma,
+                                            device=device).to(device)
     elif args.prior == 'Laplace_prior':
-        bayesian_model = LaplaceBayesianCNNSingleFCCustom(num_classes=num_classes,
+        if args.variamt == 'Base':
+            bayesian_model = LaplaceBayesianCNNSingleFCCustom(num_classes=num_classes,
+                                                mu=args.mu,
+                                                b=args.sigma,
+                                                device=device).to(device)
+        elif args.variant == 'Adaptive':
+            bayesian_model = LaplaceBayesianCNNSingleFCCustomAdaptive(num_classes=num_classes,
                                                 mu=args.mu,
                                                 b=args.sigma,
                                                 device=device).to(device)
 
-    
+    #if args.prior == 'Gaussian_prior':
+    #    bayesian_model = BaseBayesianCNNSingleFCCustom(num_classes=num_classes,
+    #                                        prior_choice="gaussian",
+    #                                        mu=args.mu,
+    #                                        sigma=args.sigma,
+    #                                        device=device).to(device)
+    #elif args.prior == 'Laplace_prior':
+    #    bayesian_model = BaseBayesianCNNSingleFCCustom(num_classes=num_classes,
+    #                                        prior_choice="laplace",
+    #                                        mu=args.mu,
+    #                                        sigma=args.sigma,
+    #                                        device=device).to(device)
+    #elif args.prior == 'Uniform_prior':
+    #    bayesian_model = BaseBayesianCNNSingleFCCustom(num_classes=num_classes,
+    #                                        prior_choice="uniform",
+    #                                        mu=args.mu,
+    #                                        sigma=args.sigma,
+    #                                        device=device).to(device)
+
+
     guide = AutoDiagonalNormal(bayesian_model)
 
     optimizer = Adam({"lr": args.lr})  # Increased from 1e-4 to 1e-3
@@ -225,8 +258,8 @@ if __name__ == "__main__":
     # save the training loss and training accuracy per epoch in a dataframe
     training_stats_df = pd.DataFrame({
         'Epoch': accuracy_epochs,
-        'Loss': losses,
-        'Accuracy': accuracies
+        #'Loss': losses,
+        'Training Accuracy': accuracies
     })
     training_stats_df.to_csv(f'results_eurosat/bayesian_results_stats{experiment_serial}.csv', index=False)
 
