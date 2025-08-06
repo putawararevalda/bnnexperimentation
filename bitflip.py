@@ -18,6 +18,23 @@ def bitflip_float32(x, bit_i=np.random.randint(0, 32)):
     return x_
 
 
+def bitflip_float32_with_original(x, bit_i=np.random.randint(0, 32)):
+
+    if hasattr(x, "__iter__"):
+        x_ = np.zeros_like(x, dtype=np.float32)
+        for i, item in enumerate(x):
+            string = list(float32_to_binary(item))
+            original_bit = string[bit_i]
+            string[bit_i] = "0" if string[bit_i] == "1" else "1"
+            x_[i] = binary_to_float32("".join(string))
+    else:
+        string = list(float32_to_binary(x))
+        string[bit_i] = "0" if string[bit_i] == "1" else "1"
+        x_ = binary_to_float32("".join(string))
+
+    return x_, original_bit
+
+
 def float32_to_binary(f):
     # Pack float into 4 bytes, then unpack as a 32-bit integer
     [bits] = struct.unpack("!I", struct.pack("!f", f))
