@@ -930,9 +930,9 @@ if __name__ == "__main__":
     elif args.prior == 'Uniform_prior':
         act_fn_list = ['uniform']
 
-    #prior_list = ['relu','tanh','sigmoid','sinusoidal','relu6','wg','rwg']
-    #prior_list = ['wg','rwg']
-    prior_list = ['relu']
+    prior_list = ['relu','tanh','sigmoid','sinusoidal','relu6','wg','rwg']
+    #prior_list = ['wg','rwg','tanh','sigmoid','sinusoidal','relu6']
+    #prior_list = ['relu']
 
     if args.b_set == 'full':
         b_list = [10.0, 1.0, 0.1]

@@ -276,6 +276,12 @@ class AutoLaplace(AutoGuide):
             results[name] = biject_to(site["fn"].support)(qvals)
         return results
 
+# Added
+class UniformReal(dist.Uniform):
+    @property
+    def support(self):
+        return constraints.real
+
 
 class AutoUniform(AutoGuide):
     """
@@ -356,7 +362,8 @@ class AutoUniform(AutoGuide):
                 # draw unconstrained latent from Uniform(low, low + width)
                 unconstrained = pyro.sample(
                     f"{name}_unconstrained",
-                    dist.Uniform(low, low + width).to_event(self._event_dims[name]),
+                    #dist.Uniform(low, low + width).to_event(self._event_dims[name]),
+                    UniformReal(low, low + width).to_event(self._event_dims[name]),
                     infer={"is_auxiliary": True},
                 )
 
@@ -403,7 +410,8 @@ class AutoUniform(AutoGuide):
         for name, site in self.prototype_trace.iter_stochastic_nodes():
             low, width = self._get_low_and_width(name)
             # shape: [len(quantiles), *low.shape]
-            qvals = dist.Uniform(low, low + width).icdf(qs.reshape((-1,) + (1,) * low.dim()))
+            #qvals = dist.Uniform(low, low + width).icdf(qs.reshape((-1,) + (1,) * low.dim()))
+            qvals = UniformReal(low, low + width).icdf(qs.reshape((-1,) + (1,) * low.dim()))
             results[name] = biject_to(site["fn"].support)(qvals)
         return results
 
@@ -516,7 +524,8 @@ class AutoLowRankMultivariateUniform(AutoContinuous):
         factor = self.cov_factor * base.unsqueeze(-1)
         # effective half‐range
         half_range = base * (factor.pow(2).sum(-1) + 1).sqrt()
-        return dist.Uniform(self.loc - half_range, self.loc + half_range)
+        #return dist.Uniform(self.loc - half_range, self.loc + half_range)
+        return UniformReal(self.loc - half_range, self.loc + half_range)
 
     def _loc_scale(self, *args, **kwargs):
         base = self.range_base
@@ -594,7 +603,8 @@ class BayesShipsCNN(PyroModule):
         elif self.prior_dist == 'laplace':
             base = dist.Laplace(self.prior_mu, self.prior_b)
         elif self.prior_dist == 'uniform':
-            base = dist.Uniform(-self.prior_b, self.prior_b)
+            #base = dist.Uniform(-self.prior_b, self.prior_b)
+            base = UniformReal(-self.prior_b, self.prior_b)
         else:
             raise ValueError(f"Unsupported prior: {self.prior_dist}")
         return base.expand(shape).to_event(len(shape))
@@ -834,9 +844,6 @@ class NewInjector:
 
         param_store_name = f"AutoGuideList.{ll_module_index}.{parameter_name}"
 
-
-
-
         with torch.no_grad():
             param = pyro.get_param_store().get_param(param_store_name)
             new_param = param.clone()
@@ -1003,7 +1010,12 @@ class NewInjector:
         # Construct the Pyro ParamStore key for this tensor
         param_store_name = f"{param_unique}.{parameter_name}.{layer}.{layer_module}"
 
+        # insert remarks if any width adjustment (in uniform) or anything is done
+        remarks = ""
+
         # Reload the saved ParamStore so we start from your trained guide
+        pyro.clear_param_store()
+
         pyro.get_param_store().set_state(
             torch.load(pyro_param_store_path, weights_only=False)
         )
@@ -1016,6 +1028,41 @@ class NewInjector:
             # 2) Extract, flip one bit, and wrap back as a tensor
             orig_val = flat[location_index].cpu().item()
             flipped  = bitflip_float32(orig_val, bit_i)      # Python float
+
+            # if the parameter is 'widths' or 'scales' and the flipped value is negative, we skip
+            if parameter_name in ["widths", "scales"] and flipped < 0:
+                accuracy_after = np.nan
+                softmax_diff = np.nan
+                abs_diff = np.nan
+                remarks += "SEU width or scale was negative; "
+                print(
+                    f"Skipping SEU at '{param_store_name}[{location_index}]': "
+                    f"original value {orig_val:.3e}, flipped value {flipped:.3e}."
+                )
+                return {
+                    "accuracy_change":    accuracy_after - self.initial_accuracy,
+                    "softmax_difference": softmax_diff,
+                    "absolute_difference": abs_diff,
+                    "remarks": remarks
+                }
+
+            # Check for NaN or Inf and clip if necessary
+            if np.isnan(flipped) or np.isinf(flipped):
+                remarks += "SEU went to NaN or Inf clipping to finite range; "
+                print(f"Available clip values range is '{-np.finfo(np.float32).max} {np.finfo(np.float32).max}'")
+                #flipped = np.clip(flipped, -np.finfo(np.float32).max, np.finfo(np.float32).max)
+                flipped = np.nan_to_num(
+                    flipped,
+                    nan= np.finfo(np.float32).max if orig_val >= 0 else -np.finfo(np.float32).max,
+                    posinf=np.finfo(np.float32).max,
+                    neginf=-np.finfo(np.float32).max,
+                )
+                print(
+                    f"Warning: Flipped value at '{param_store_name}[{location_index}]' is NaN or Inf! "
+                    f"Original value was {orig_val:.3e}, "
+                    f"flipped value is clipped to {flipped:.3e}. Clipping to finite range."
+                )
+
             seu_val  = torch.tensor(
                 flipped, dtype=param.dtype, device=param.device
             )
@@ -1030,6 +1077,7 @@ class NewInjector:
             # 4) If this is an AutoUniform guide, enforce
             #    width >= nextafter(low) – low so Uniform(low, low+width) stays valid.
             if param_unique == "AutoUniform":
+                
                 # (a) get the current lows tensor (after any flip)
                 low_name = f"{param_unique}.lows.{layer}.{layer_module}"
                 low_param = pyro.get_param_store() \
@@ -1041,6 +1089,13 @@ class NewInjector:
                     low_val = seu_val
                 else:  # we just flipped a width, so low stays original
                     low_val = low_param[location_index]
+
+                # check and print if low_val is nan
+                if torch.isnan(low_val):
+                    print(
+                        f"Warning: low value at '{low_name}[{location_index}]' is NaN! "
+                        f"Original value was {orig_val:.3e}, flipped value is {flipped:.3e}."
+                    )
 
                 # compute the smallest positive increment (ULP) at low_val
                 delta = (
@@ -1058,19 +1113,50 @@ class NewInjector:
 
                 # original width at that index (after any SEU if param was 'widths')
                 orig_width = wflat[location_index].cpu().item()
+                # check whether the orig_width is nan
+                if np.isnan(orig_width):
+                    print(
+                        f"Warning: original width at '{width_name}[{location_index}]' is NaN! "
+                        f"Original width is {orig_width:.3e}"
+                    )
                 # enforce the minimum
                 new_width  = torch.max(wflat[location_index], delta)
                 wflat[location_index] = new_width
+
+                # check whether the new width is nan
+                if torch.isnan(new_width):
+                    print(
+                        f"Warning: new width at '{width_name}[{location_index}]' is NaN! "
+                        f"Original width was {orig_width:.3e}, delta is {delta:.3e}."
+                    )
 
                 # write back the clamped widths
                 pyro.get_param_store().__setitem__(
                     width_name, wflat.view(width_param.shape)
                 )
 
-                print(
-                    f"Adjusted width at '{width_name}[{location_index}]': "
-                    f"{orig_width:.3e} → {new_width:.3e}"
-                )
+                if orig_width != new_width:
+                    remarks += f"AutoUniform width adjusted; "
+                    print(
+                        f"Adjusted width at '{width_name}[{location_index}]': "
+                        f"{orig_width:.3e} → {new_width:.3e}"
+                    )
+                else:
+                    pass
+
+                if parameter_name == "widths" and seu_val < 0:
+                    accuracy_after = np.nan
+                    softmax_diff = np.nan
+                    abs_diff = np.nan
+                    remarks += "SEU width was negative; "
+                    # continue or break to skip this?
+                    return {
+                        "accuracy_change":    accuracy_after - self.initial_accuracy,
+                        "softmax_difference": softmax_diff,
+                        "absolute_difference": abs_diff,
+                        "remarks": remarks
+                    }
+                    
 
             # 5) Report the flip
             print(
@@ -1101,6 +1187,7 @@ class NewInjector:
             "accuracy_change":    accuracy_after - self.initial_accuracy,
             "softmax_difference": softmax_diff,
             "absolute_difference": abs_diff,
+            "remarks": remarks
         }
 
 
@@ -1253,8 +1340,8 @@ if __name__ == "__main__":
                                         "prior",
                                         "best_accuracy",
                                         "prior_mu",
-                                            "prior_b",
-                                            "param_type",
+                                        "prior_b",
+                                        "param_type",
                                         "location_index",
                                         "location_layer",
                                         "location_module",
@@ -1264,6 +1351,7 @@ if __name__ == "__main__":
                                         "accuracy_change", 
                                         "softmax_difference", 
                                         "mean_abs_difference",
+                                        "remarks"
                                         ])
 
         # get the initial accuracy from the newinj object
@@ -1292,8 +1380,10 @@ if __name__ == "__main__":
 
                     #print(f"Running SEU on {layer}.{param_name} at index {target_index} with bit flip 0")
 
-                    for bit_iter in [1]:
+                    #for bit_iter in [1]:
                     #for bit_iter in [0, 1, 3, 6, 10, 15, 21]:
+                    for bit_iter in [0, 1, 3, 10]:
+                    #for bit_iter in [6, 15, 21]:
                         if model_config['prior'] == 'uniform':
                             parameter_name_list = ["lows", "widths"]
                             param_unique_target = "AutoUniform"
@@ -1352,7 +1442,8 @@ if __name__ == "__main__":
                                 "accuracy_after_seu": initial_accuracy + result["accuracy_change"],
                                 "accuracy_change": result["accuracy_change"],
                                 "softmax_difference": result["softmax_difference"],
-                                "mean_abs_difference": result["absolute_difference"]
+                                "mean_abs_difference": result["absolute_difference"],
+                                "remarks": result["remarks"]
                             }, index=[0])
 
                             results_df = pd.concat([results_df, iter_df], ignore_index=True)
