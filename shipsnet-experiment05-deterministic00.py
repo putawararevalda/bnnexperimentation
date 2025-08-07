@@ -335,13 +335,14 @@ if __name__ == "__main__":
                 model_path = os.path.join(directory_target, pth_file)
                 print(f"Loading model from {model_path}")
                 # split the filename by the / first
+                timestamp_activation = model_path.split('\\')[-1].split('_')[2]
                 model = ShipsCNN(num_classes=2, activation=model_path.split('\\')[-1].split('_')[2])
                 model.load_state_dict(torch.load(model_path))
                 model.eval()
                 break
 
         results_df = pd.DataFrame(columns=[
-                                    #"activation_fn",
+                                    "activation_fn",
                                     #"prior",
                                     #"best_accuracy",
                                     #"prior_mu",
@@ -389,7 +390,7 @@ if __name__ == "__main__":
                         )
 
                         iter_df = pd.DataFrame({
-                            #"activation_fn": model.activation_fn.__name__,
+                            "activation_fn": model.activation_fn.__name__,
                             #"prior": model.prior,
                             #"best_accuracy": model.best_accuracy,
                             #"prior_mu": model.prior_mu,
