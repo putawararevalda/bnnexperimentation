@@ -213,12 +213,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     lr          = 1e-3
-    num_epochs  = args.epochs #default 20
+    num_epochs  = args.epoch #default 20
 
     model_variant = args.model_variant
 
-    for aoi in ['tanh', 'sigmoid', 'sin', 'relu6', 'actWG', 'actRWG']:
-
+    #for aoi in ['tanh', 'sigmoid', 'sin', 'relu6', 'actWG', 'actRWG']:
+    for aoi in ['relu']:
         weight_decay_target = 0
 
         if model_variant == "00":
@@ -231,6 +231,7 @@ if __name__ == "__main__":
                                 dropout_switch=True).to(device)
         elif model_variant == "03":
             weight_decay_target = 1e-4
+            model = ShipsCNNCustom(activation=aoi).to(device)
         else:
             raise ValueError(f"Unsupported model variant: {model_variant}")
 

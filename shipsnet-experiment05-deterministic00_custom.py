@@ -345,9 +345,10 @@ class DeterministicInjector:
 
         with torch.no_grad():
             for layer_name, tensor in self.trained_model.named_parameters():
-                if layer_name__:  # check if it is specified for a layer
-                        if layer_name__ != layer_name:  # skip layer if not the layer name
-                            continue
+                if layer_name == layer_name__:  # match exact target
+                    break
+            else:
+                raise ValueError(f"Layer {layer_name__} not found in the model.")
         
         # 1) Grab the original tensor and flatten it
         param = tensor.data.clone()  # copy original tensor values
@@ -399,6 +400,10 @@ if __name__ == "__main__":
 
     experiment_iteration = 0
 
+    #timestamps = ['20250808_202316'] #01
+    #timestamps = ['20250808_202843'] #02
+    timestamps = ['20250808_203118'] #03
+
     for ts_idx in range(len(timestamps)):
         experiment_iteration += 1
 
@@ -414,6 +419,8 @@ if __name__ == "__main__":
                 print(f"Loading model from {model_path}")
                 # split the filename by the / first
                 timestamp_activation = model_path.split('\\')[-1].split('_')[2]
+
+                print(model_path)
 
                 model_variant = args.model_variant
 
