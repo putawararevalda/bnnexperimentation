@@ -85,3 +85,5 @@ python shipsnet-experiment05-guide.py --prior "Uniform_prior" --search-dir "resu
 python shipsnet-train-deterministic.py --epoch 20 --model_variant "01"
 python shipsnet-train-deterministic.py --epoch 20 --model_variant "02"
 python shipsnet-train-deterministic.py --epoch 20 --model_variant "03"
+
+python shipsnet-experiment05-guide.py --prior "Laplace_prior" --search-dir "results_shipsnet_v02_01" --save-dir "results_shipsnet_v02_01_SEU" --limited-mode
