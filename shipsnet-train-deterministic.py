@@ -208,7 +208,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--epoch', type=int, nargs='?', action='store', default='20',
             help='Number of epoch. Default: 20.')
-    parser.add_argument('--model_variant', type=str, nargs='?', action='store', default='00',
+    parser.add_argument('--model-variant', type=str, nargs='?', action='store', default='00',
                 help='Model to run. Default: \'00\'.')
     args = parser.parse_args()
 
@@ -217,8 +217,9 @@ if __name__ == "__main__":
 
     model_variant = args.model_variant
 
-    #for aoi in ['tanh', 'sigmoid', 'sin', 'relu6', 'actWG', 'actRWG']:
-    for aoi in ['relu']:
+    #for aoi in ['relu']:
+    for aoi in ['tanh', 'sigmoid', 'sin', 'relu6', 'actWG', 'actRWG', 'relu']:
+
         weight_decay_target = 0
 
         if model_variant == "00":
@@ -230,8 +231,8 @@ if __name__ == "__main__":
             model = ShipsCNNCustom(activation=aoi,
                                 dropout_switch=True).to(device)
         elif model_variant == "03":
-            weight_decay_target = 1e-4
             model = ShipsCNNCustom(activation=aoi).to(device)
+            weight_decay_target = 1e-4
         else:
             raise ValueError(f"Unsupported model variant: {model_variant}")
 

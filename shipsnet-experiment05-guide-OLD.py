@@ -33,7 +33,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
 
-from bitflip import bitflip_float32_with_original
+from bitflip import bitflip_float32
 
 from torchvision.datasets import ImageFolder
 
@@ -923,8 +923,7 @@ class NewInjector:
         try:
             after_labels, after_predictions, after_logits, after_probs = self.predict_data_probs(num_samples)
             accuracy_after = self.return_accuracy(after_labels, after_predictions)
-            #softmax_diff = self.compute_softmax_difference(self.initial_probs, after_probs)
-            softmax_diff = self.compute_softmax_difference(self.initial_probs, after_logits)
+            softmax_diff = self.compute_softmax_difference(self.initial_probs, after_probs)
         except:
             print("Error during prediction after SEU.")
             accuracy_after = np.nan
@@ -977,8 +976,7 @@ class NewInjector:
         try:
             after_labels, after_predictions, after_logits, after_probs = self.predict_data_probs(num_samples)
             accuracy_after = self.return_accuracy(after_labels, after_predictions)
-            #softmax_diff = self.compute_softmax_difference(self.initial_probs, after_probs)
-            softmax_diff = self.compute_softmax_difference(self.initial_probs, after_logits)
+            softmax_diff = self.compute_softmax_difference(self.initial_probs, after_probs)
         except:
             print("Error during prediction after SEU.")
             accuracy_after = np.nan
@@ -1029,8 +1027,7 @@ class NewInjector:
 
             # 2) Extract, flip one bit, and wrap back as a tensor
             orig_val = flat[location_index].cpu().item()
-            flipped, original_bit_condition = bitflip_float32_with_original(orig_val, bit_i) 
-            #flipped  = bitflip_float32(orig_val, bit_i)      # Python float
+            flipped  = bitflip_float32(orig_val, bit_i)      # Python float
 
             # if the parameter is 'widths' or 'scales' and the flipped value is negative, we skip
             if parameter_name in ["widths", "scales"] and flipped < 0:
@@ -1046,8 +1043,7 @@ class NewInjector:
                     "accuracy_change":    accuracy_after - self.initial_accuracy,
                     "softmax_difference": softmax_diff,
                     "absolute_difference": abs_diff,
-                    "remarks": remarks,
-                    "original_bit_condition": original_bit_condition,
+                    "remarks": remarks
                 }
 
             # Check for NaN or Inf and clip if necessary
@@ -1158,8 +1154,7 @@ class NewInjector:
                         "accuracy_change":    accuracy_after - self.initial_accuracy,
                         "softmax_difference": softmax_diff,
                         "absolute_difference": abs_diff,
-                        "remarks": remarks,
-                        "original_bit_condition": original_bit_condition,
+                        "remarks": remarks
                     }
                     
 
@@ -1183,8 +1178,7 @@ class NewInjector:
         # 7) Re‑run inference & evaluation
         after_labels, after_preds, after_logits, after_probs = self.predict_data_probs(num_samples)
         accuracy_after = self.return_accuracy(after_labels, after_preds)
-        #softmax_diff  = self.compute_softmax_difference(self.initial_probs, after_probs)
-        softmax_diff  = self.compute_softmax_difference(self.initial_probs, after_logits)
+        softmax_diff  = self.compute_softmax_difference(self.initial_probs, after_probs)
 
         print(f"Accuracy after SEU: {accuracy_after:.3%}")
         print("===================================")
@@ -1193,8 +1187,7 @@ class NewInjector:
             "accuracy_change":    accuracy_after - self.initial_accuracy,
             "softmax_difference": softmax_diff,
             "absolute_difference": abs_diff,
-            "remarks": remarks,
-            "original_bit_condition": original_bit_condition,
+            "remarks": remarks
         }
 
 
@@ -1239,8 +1232,7 @@ class NewInjector:
         try:
             after_labels, after_predictions, after_logits, after_probs = self.predict_data_probs(num_samples)
             accuracy_after = self.return_accuracy(after_labels, after_predictions)
-            #softmax_diff = self.compute_softmax_difference(self.initial_probs, after_probs)
-            softmax_diff = self.compute_softmax_difference(self.initial_probs, after_logits)
+            softmax_diff = self.compute_softmax_difference(self.initial_probs, after_probs)
             mean_abs_diff = float(np.mean(abs_differences))
         except:
             accuracy_after = np.nan
@@ -1319,7 +1311,7 @@ if __name__ == "__main__":
     #check the prior_params b, if each timestamps, if it is not 1.0, remove the timestamp from the list
     if args.limited_mode:
         timestamps = [ts for ts in timestamps if load_model_config(ts)['prior_params']['b'] == 1.0]
-        print(f"After filtering by prior_params['b'] == 0.1, timestamps count: {len(timestamps)}")
+        print(f"After filtering by prior_params['b'] == 1.0, timestamps count: {len(timestamps)}")
 
     experiment_iteration = 0
 
@@ -1389,8 +1381,8 @@ if __name__ == "__main__":
                     #print(f"Running SEU on {layer}.{param_name} at index {target_index} with bit flip 0")
 
                     #for bit_iter in [1]:
-                    for bit_iter in [0, 1, 3, 6, 10, 15, 21]:
-                    #for bit_iter in [0, 1, 3, 10]:
+                    #for bit_iter in [0, 1, 3, 6, 10, 15, 21]:
+                    for bit_iter in [0, 1, 3, 10]:
                     #for bit_iter in [6, 15, 21]:
                         if model_config['prior'] == 'uniform':
                             parameter_name_list = ["lows", "widths"]
@@ -1451,7 +1443,6 @@ if __name__ == "__main__":
                                 "accuracy_change": result["accuracy_change"],
                                 "softmax_difference": result["softmax_difference"],
                                 "mean_abs_difference": result["absolute_difference"],
-                                "original_bit_condition": result["original_bit_condition"],
                                 "remarks": result["remarks"]
                             }, index=[0])
 
