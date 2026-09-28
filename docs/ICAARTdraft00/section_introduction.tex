@@ -1,0 +1,77 @@
+%\subsection{Robustness of Machine Learning Systems Overview}
+\noindent
+
+%TODO
+
+% ARE WE COVERING THESE IN THE INTRODUCTION? RESULTS?
+% \begin{enumerate}
+% \item Machine learning systems are also deployed in harsh environments.
+% \item SEEs (including SEUs) can happen in harsh environments
+% \item Robustness is a performance quality of machine learning systems, which consists of security and reliability
+% \item Motivation on choosing Bayesian CNNs : Bayesian CNN offers uncertainty and already proven to be more robust against adversarial attacks
+% \item Unfortunately, no significant research has thoroughly look at how robust it is against SEUs
+% \item Thus, the research gap is explored in this research
+% \end{enumerate}
+
+Machine learning (ML) models are widely used in our daily life. Most of ML systems can be found close to us, like a recommender system, large language model or even autonomous vehicle that utilizes Convolutional Neural Network (CNN) models to steer clear from obstacles. While most of those systems are deployed in a normal environment, some of ML models are also deployed in harsh environments with its own specific designated purpose. 
+
+%One of machine learning system that is deployed in a harsh environment is CloudScout \cite{Giuffrida2020-ry}. CloudScout, which is installed in Hyperscout-2 satellite, part of the European Space Agency (ESA) PhiSat-1 mission, is a first in-orbit demonstration of Deep Neural Network for data processing on edge. It uses CNN to classify hyperspectral satellite images as either cloudy or not cloudy directly on-board, and only transmit the non cloudy image to the ground, significantly reducing bandwidth consumption.
+
+A representative example is CloudScout \cite{Giuffrida2020-ry}, a CNN-based system onboard the ESA PhiSat-1 mission that performs on-board cloud detection on hyperspectral images, transmitting only non-cloudy data to the ground, reducing bandwidth usage.
+
+Machine learning systems deployed in harsh environments are exposed to risks during its inference, and a common term to associate this performance with Deep Neural Networks is \textit{robustness} \cite{shafique_2021}. Robustness are categorized into two subproperties, security and reliability. While the security aspect of DNNs focuses on preventing information inside the network to be stolen or protecting the system to get an incorrect input (adversarial attack), the reliability aspect of robustness focuses on keeping the model to display a consistent output, parameter, or behaviour, despite changes of environmental condition or fabrication.
+
+% \subsection{Motivations} %answer question 2 : Why it is important, and why should people care
+
+Being deployed in the space, a harsh environment, we can assume that machine learning systems like CloudScout is prone to risks that exists due to being deployed outside of earth surface. One of the risks that could hamper the performance of machine learning models that are deployed in harsh environments is single event effects (SEEs).
+
+One example of SEE that can happen to machine learning models deployed in a harsh environment is Single Event Upsets (SEUs). SEUs are a temporary change of memory or control bit \cite{petersen_single_2011}. One phenomenon that shows the characteristic of SEUs is the incident of bitflips.
+
+Machine learning with a good quality of robustness, or Robust ML Systems, can mitigate the impact of SEUs/bitflips, rendering the output of the model to be consistent. In this research, we are motivated to understand the impact of SEUs/bitflips to weight/bias perturbation in Bayesian Neural Networks. 
+
+This research is built upon work done in \cite{dennispoperobustcnn} that reviewed CNN design choices to develop robust ML models. This research is also motivated by previous research that has proved that Bayesian Neural Networks are more robust against adversarial attacks (security aspect of robustness). Although there are already a significant number of studies that addressed those two aforementioned fields, \textbf{there has been little to no investigation into the robustness of Bayesian Neural Networks against weight/bias perturbation} (reliability aspect of robustness). This dissertation seeks to address that gap.
+
+
+% \subsection{Our Approach}
+
+In this research, we will show multiple Bayesian Neural Network design choice and compare its performance measure. Subsequently, we will simulate Single Event Upset (SEUs) with bitflips across all Bayesian Neural Network design alternatives and measure its performance measures afterwards. Robustness is then measured from the difference on the result of the model, before and after the model is perturbed with SEUs.
+
+We comprehensively compared deterministic and Bayesian CNN models' performance across 4 model variations, 7 activation functions, and 3 prior distributions.  In this research, we also proposed a new robustness measure called the Aggregate Robustness Index (ARIn), which combines accuracy change and softmax deviation. Overall, this study show whether Bayesian CNN model can achieve better robustness compared to deterministic CNN model or not. It also shows which model design that is more robust.
+
+
+% \subsection{Study Aims}
+
+
+% To find a Bayesian Neural Network design choice that is robust against perturbation of weight/bias, we aim to complete several tasks in this research:
+% \begin{enumerate}
+% \item Train multiple deterministic and Bayesian Neural Networks with different design choices and note their performance
+% \item Do multiple experiments of SEU injection on the different deterministic and Bayesian Neural Network design and note its performance
+% \item Compare the robustness of each different design
+% \item Validate whether Bayesian Neural Networks are more robust compared to deterministic Neural Networks
+% \end{enumerate}
+
+
+% \subsection{Study Contributions}
+
+%MAKE BULLETS?
+
+This study provides the evaluation of BNN robustness under SEUs, which addresses current research gaps in prior work that has focused primarily on CNN robustness under SEUs and Bayesian CNN robustness under adversarial attacks.  The paper makes the following contributions:
+
+\begin{itemize}
+    \item We demonstrate a range of Bayesian Neural Network design choices that are robust against perturbation of the model's weight and  biases.
+    \item We provide detailed analyse of the effects of SEUs across different attack variables, including layer type, weight versus bias, mean versus variance parameters, and bit index along with its original value.
+    \item Propose a novel measure of model robustness for SEUs.  We show that the measure is capable of detecting critical aspects of models under SEUs attacks.
+    % \item We show that deterministic CNN designs are more robust (according to accuracy measure) to attacks while BNNs are robust according to another measure (soft max difference).
+    
+\end{itemize}
+
+% 
+
+
+% To find a Bayesian Neural Network design choice that is robust against perturbation of weight/bias, we aim to complete several tasks in this research:
+% \begin{enumerate}
+% \item Train multiple deterministic and Bayesian Neural Networks with different design choices and note their performance
+% \item Do multiple experiment of SEU injection on the different deterministic and Bayesian Neural Network design and note its performance
+% \item Compare the robustness of each different design
+% \item Validate whether Bayesian Neural Networks are more robust compared to deterministic Neural Networks
+% \end{enumerate}

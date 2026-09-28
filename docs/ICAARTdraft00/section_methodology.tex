@@ -1,0 +1,249 @@
+
+%\section{\uppercase{Methodology}}
+
+\subsection{Dataset}
+\label{subs:dataset}
+
+In this research, we are using an image dataset called "Ships in Satellite Imagery" \cite{robert_hammell_2018}, or "Shipsnet" in short. The dataset is satellite imagery captured from a commercial company called Planet. Those satellite images are taken from over the San Francisco Bay and San Pedro Bay areas of California. Initially, the pictures are orthorectified 3-meter pixel size, but for this task in detecting ships, 4000 80 x 80 RGB images are derived from it, labeled with either a "ship" (1) or "no-ship" (0) classification.
+
+\begin{figure}[H]
+    \centering
+    %\begin{minipage}[b]{0.4\textwidth}
+    %    \centering
+    %    \includegraphics[width=\textwidth]{figure2/6.png}
+    %    % (a)\\ % Add label (a) here
+    %\end{minipage}
+    %\hfill
+    \begin{minipage}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{images/shipsnet_samples.png}
+        % (b)\\ % Add label (b) here
+    \end{minipage}
+    \caption{Dataset}
+    \label{fig:datasetsamples}
+\end{figure}
+
+%TODO explain about the preprocessing done for this dataset before it is deemed fit to be processed
+
+The image is resized into 64 x 64 pixels, its pixel values are scaled, and then standardized, so that its value ranges from -1 to 1 and is centered around 0.
+
+
+\subsection{Model architecture}
+
+\textbf{Baseline.} The deterministic CNN model that we will set as a benchmark for this research is designed for binary image classification, as the class distribution dictated in subsection \ref{subs:dataset}. We will utilize 2 convolutional layers (namely \texttt{conv1} and \texttt{conv2}) with each followed by designated activation function and maxpooling (torch.nn.MaxPool2d). The output then flattened to be processed in a fully connected layer that outputs two class probability. In total, we will have 52,162 trainable weights and biases.
+
+\textbf{Training.} The model is trained on Shipsnet dataset with 80/20 train-test split. The model will is trained on the dataset of batch size 16 in 20 epochs, keeping the model with the best test accuracy. Adam is used to minimize the loss function with learning rate of $10^{-3}$.
+
+\textbf{Bayesian extension.} The Bayesian CNN model will follow the architecture of the deterministic CNN model, with a few differences. First, in this model, all weights and biases are modelled as random variable drawn from a prior distribution, which either Gaussian, Laplace, or Uniform prior. This variation will allow us to study how the tail behavior and spread of each prior influence robustness.
+
+\textbf{Bayesian model training.} Our Bayesian CNN model will use negative Evidence Lower Bound (ELBO) loss. Given the dataset $D$ with observed inputs and labels, the ELBO loss aims to maximize the expected log-likelihood of the data from the sampled network weights while minimizing the KL divergence between the learned variational distribution $q(W)$ and the prior $p(W)$, trying to balance the data fit and regularization. ELBO is notated as follows:
+\begin{equation}
+\textbf{ELBO} \;\equiv\; 
+\mathbb{E}_{q_\phi(W)}\big[\log p(D \mid W)\big]
+\;-\;
+\text{KL}\big(q_\phi(W) \;\|\; p(W)\big)
+\label{eq:elbo_bnn}
+\end{equation}
+
+Bayesian Inference of these weights and biases during training will utilize Stochastic Variational Inference (SVI), with mean-field assumption. All weights and biases are assumed to be independent.
+
+\textbf{Inference procedure.} Inference in Bayesian CNN models in this research is different from what is usually done in deterministic CNN models. We will use Monte Carlo Sampling in doing inference, with number of Samples $S=10$. Each iteration samples new weights ($W^{(s)}$) from a variational posterior family. Logits are averaged before applying argmax, reducing prediction variance. This mechanism shows the aggregation of Bayesian predictive uncertainty, which can not be found in the deterministic CNN. 
+
+\subsection{Model Variations} \label{subs:modelvar}
+
+%\subsubsection{Model variations}
+%TODO
+
+In this study, we will utilize 7 different activation functions to compare their robustness. Some of these are widely known activation functions like ReLu, Sigmoid, Tanh, and Sine. We also want to test the Weighted Gaussian (WG) and Rectified Weighted Gaussian introduced in \cite{dennispoperobustcnn} in this experiment, which are shown in Equation (\ref{eq:wg}) and Equation (\ref{eq:rwg}). As previous research shows that ReLU is the least robust activation function \cite{dennispoperobustcnn}, we also want to look at a different version of it called ReLU6, that clips ReLU to have a maximum value of 6.
+
+\begin{minipage}{0.4\linewidth}
+\begin{equation}
+\text{WG}(x) = x e^{-x^{2}}
+\label{eq:wg}
+\end{equation}
+\end{minipage}\hfill
+\begin{minipage}{0.4\linewidth}
+\begin{equation}
+\text{RWG}(x) = \max(0, x e^{-x^{2}})
+\label{eq:rwg}
+\end{equation}
+\end{minipage}
+
+\begin{figure}[h]
+\caption{Activation Functions Plot}
+\includegraphics[scale=0.4]{images/activation_functions_new_stacked.png}
+\centering
+\label{fig:activationfunctions}
+\end{figure}
+
+To observe different model architecture design and their impact to the robustness of our model, we will explore a few options that we can choose to apply to that model, on top of our base model. The different model architecture designs are coded as follows:
+\begin{enumerate}
+\item Model 0: The base model.
+\item Model 1: Instead of using maxpooling, the convolutional layer will be followed by smartpooling. This method is inspired from the work in \cite{santos_2019a}, that demonstrates that 16\% robustness is achieved in ReLU-based deterministic CNNs equipped with SmartPooling. In Smartpooling, if a value exceeds a threshold $\theta=10x$, the value will be discarded and the second highest value is chosen.
+\item Model 2: Dropout layer is applied after conv2 layer during training. Dropout layer can benefit from mitigating the SEU-induced performance drop \cite{dennispoperobustcnn} by deactivating random neurons during training, with $p=0$ (off state) and $p=0.5$ (on state) in this experiment.
+\item Model 3: Weight decay is implemented to the \texttt{Adam} optimizer with $\lambda = 10^{-4}$. Weight decay is a regularization technique that allows complex models to be trained on data sets of limited size without severe over-fitting \cite{bishoppatternrecognition2007}.
+\end{enumerate}
+
+While the deterministic CNN model have 28 model variations (7 activation functions and 4 architecture designs), the Bayesian CNN model that relies on sampling weight and bias from prior distribution will also be varied by the 3 different prior distribution (Gaussian, Laplace, and Uniform). This makes the Bayesian CNN model to have 84 model variations.
+
+\subsection{Simulated SEU Process}
+
+%TODO explain that the simulated SEU process will hit a bit index and change its value from 0 to 1 or vice versa.
+
+In this research, we are using Floating Point 32 (FP32) to represent numbers in our machine. SEU injection will do a bitflip in one of the bit in FP32, changing the value from 0 to 1 or vice versa. Illustration of an SEU injection in a deterministic CNN model is as follows:
+
+% added at 14/10/2025
+
+\iffalse
+\begin{itemize}
+    \item Layers are denoted as \( m \in \{\mathrm{conv1}, \mathrm{conv2}, \mathrm{fc1}\} \).
+        \item Each layer \( m \) has \( N_m \) output neurons.
+    \item The neuron position under attack is denoted as \( \mathrm{pos} \in \{\mathrm{f}, \ell\} \),
+    where \( \mathrm{f} \) corresponds to the first neuron and \( \ell \) to the last neuron, defined as:
+    \[
+    n_m^{\mathrm{f}} = 1, \qquad n_m^{\ell} = N_m.
+    \]
+    \item The parameter type is \( p \in \{\mathrm{w}, \mathrm{b}\} \) for weight or bias.
+    \item The scalar value of weight or bias is represented as \( w_{m,n,p} \).
+    \item The set of possible attacked bit indices follows the IEEE-754 32-bit floating-point representation. In this research, we limit the attack to these indices:
+    \[
+    I = \{0, 1, 3, 6, 10, 15, 21\}.
+    \]
+    %\item The binary representation of a 32-bit floating-point value \( w_{m,n,p} \) is denoted as
+    %\[
+    %\mathrm{bits}(w_{m,n,p}) = (b_{31}, b_{30}, \ldots, b_0),
+    %\ b_i \in \{0, 1\}.
+    %\]
+    %The function \( \mathrm{FP32}(\cdot) \) converts a bit vector back to its floating-point scalar value.
+\end{itemize}
+\fi
+
+%$m \ $
+
+\begin{itemize}
+    \item Layers are denoted as \( m \) and each layer has \( N_m \) output neurons.
+    \item The neuron position under attack is denoted as \( \mathrm{pos} \in \{\mathrm{f}, \ell\} \),
+    where \( \mathrm{f} \) corresponds to the first neuron and \( \ell \) to the last neuron, defined as:
+    \[
+    n_m^{\mathrm{f}} = 1, \qquad n_m^{\ell} = N_m.
+    \]
+    \item Parameter type is \( p \in \{\mathrm{w}, \mathrm{b}\} \) for weight or bias.
+    \item The scalar value of weight or bias is represented as \( w_{m,n,p} \).
+    \item A single attacked bit index \( i \) follows the IEEE-754 32-bit floating-point representation, \( i \in I \) 
+    %In this research, we limit the attack to these indices:
+    %\[
+    %I = \{0, 1, 3, 6, 10, 15, 21\}.
+    %\]
+    %\item The binary representation of a 32-bit floating-point value \( w_{m,n,p} \) is denoted as
+    %\[
+    %\mathrm{bits}(w_{m,n,p}) = (b_{31}, b_{30}, \ldots, b_0),
+    %\ b_i \in \{0, 1\}.
+    %\]
+    %The function \( \mathrm{FP32}(\cdot) \) converts a bit vector back to its floating-point scalar value.
+\end{itemize}
+%\vspace{1em}
+For a selected layer \( m \), parameter type \( p \), neuron position \( \mathrm{pos} \),and bit index \( i \), the SEU targets the scalar parameter belonging to neuron \( n = n_m^{\mathrm{pos}} \).
+Its bit representation is:
+\[
+\mathrm{bits}\big(w_{m,n,p}\big) = (b_{0}, \ldots, b_i, \ldots, b_{31})
+,\ b_i \in \{0, 1\}.
+\]
+
+%Let \( j \in \{0, 1, \ldots, 31\} \) denote all the bit position index, the 
+
+Let bit \( j \in \{0, 1, \ldots, 31\} \) be all bit value after bit \( i \) is attacked by SEU, according to the following rule:
+
+\begin{equation}
+b'_j =
+\begin{cases}
+1, & j = i \text{ and } b_i = 0, \\[6pt]
+0, & j = i \text{ and } b_i = 1, \\[6pt]
+b_j, & j \neq i.
+\end{cases}
+\label{eq:bitflip_case}
+\end{equation}
+
+The perturbed (post-SEU) scalar value $\tilde{w}_{m,n,p}$ is then defined as FP32 representation of its bits:
+
+\begin{equation}
+%\tilde{w}_{m,n,p}^{(i,\mathrm{pos})}
+\tilde{w}_{m,n,p}
+= \mathrm{FP32}\big(b'_{0}, b'_{1}, \ldots, b'_{31}\big)
+%,\qquad n = n_m^{\mathrm{pos}}, \; i \in I.
+\label{eq:perturbed_weight}
+\end{equation}
+
+For our deterministic CNN models, we will do 2,352 SEU injections. This SEU injections are the combination of 28 different models that we have (4 model variations and 7 activation functions), with each model get 84 different SEU injections, where each attack is specified by \( m \in \{\mathrm{conv1}, \mathrm{conv2}, \mathrm{fc1}\} \), \( \mathrm{pos} \in \{\mathrm{f}, \ell\} \), \( p \in \{\mathrm{w}, \mathrm{b}\} \), and \(i \in I = \{0, 1, 3, 6, 10, 15, 21\} \).
+
+%which comprises a combination of 2 neuron attack locations (first/last neuron), 3 layer (conv1/conv2/fc1), 2 layer parameter (weight/bias), and 7 bit index. 
+
+In our Bayesian CNN models, each parameter \( w_{m,n,p} \) is treated as a random variable
+drawn from a variational posterior distribution. Let's take an example for a draw in a Gaussian distribution for Monte Carlo sample \(s \in S\):
+\[
+w_{m,n,p}^{(s)} \sim q_{\phi}(w_{m,n,p})
+= \mathcal{N}\!\left(\mu_{m,n,p},\, \sigma_{m,n,p}^{2}\right).
+\]
+An SEU attack is applied before the weight/bias is sampled. Instead of applying SEU to \( w_{m,n,p}^{(s)} \), it is applied to either \( \mu_{m,n,p} \) (prior center parameter) or \( \sigma_{m,n,p}^{2} \) (prior spread parameter). The SEU attack procedure follows the procedure that has been explained earlier in this subsection.
+
+For our Bayesian CNN models, we will do 15,456 SEU injections. 84 different models will be attacked with 84 ($7 \times 12$) attacks for the prior center and 72 ($6 \times 12$) attacks for the prior spread, for a total of 13,104 SEU injections. The combination of attacks is similar to what we have in the deterministic CNN models. The only difference is for the prior spread parameter, the bit index attacked is limited to \(i \in I = \{1, 3, 6, 10, 15, 21\} \). This is due to hitting the bit index 0 for prior spread will change the prior spread parameter sign from + to -, which is not valid to represent the spread parameter of our prior.
+
+%\( w_{m,n,p}^{(s)} \),resulting the perturbed value \( \tilde{w}_{m,n,p}^{(s)} \)defined in Equation~\ref{eq:perturbed_weight}.
+
+%For Bayesian CNN models, 84 different models will be attacked with 156 different SEU injections, 84 ($7 \times 12$) for the prior center and 72 (6 \times 12) for the prior spread, for a total of 13,104 SEU injections. The attack comprises of 36 different attacks, which combination comprises of 2 neuron attack locations, 3 layers and 2 layer parameters. We can only attack 6 variations of bit index into the prior spread, as hitting the bit index 0 for prior spread will change the prior spread parameter sign from + to -, which is not valid to represent the spread parameter of our prior.
+
+The total SEU injection attacks that we will do in this study is 15,456 injections.
+
+\subsection{Robustness Measure}
+
+To evaluate how well a neural network withstands adversarial attack or weight/bias perturbation, we need a quantitative metric that can measure its robustness. This measure will help us in comparing the variation of models or strategies with each other and decide which ones are the most robust against perturbations.
+
+The first metric that we can use to measure robustness is accuracy delta/accuracy difference. It is the most commonly used measure of robustness in this field of research and can be found in \cite{dennispoperobustcnn}, \cite{feng2024attackingbayesadversarialrobustness}, and \cite{pang2021evaluatingrobustnessbayesianneural}.  It measures the performance difference before/after perturbation. Smaller values are perceived to show a better robustness. 
+
+Accuracy of the model after the SEU injection does not necessarily lower than the accuracy before the SEU injection is done, and we want to look both for positive or negative change of accuracy and penalize them equally, without cancelling each other. To do that, we will modify the formula of Accuracy Delta to be called Absolute Accuracy Delta (AAD) as follows:
+    %\begin{equation} \label{eq:absaccdiff}
+    %\text{Absolute Accuracy Difference} = \left|\text{Accuracy}_{after} -\text{Accuracy}_{before} \right|
+    %\end{equation}
+\begin{multline} \label{eq:absaccdiff}
+\text{Absolute Accuracy Difference} = \\
+\left|\text{Accuracy}_{after} - \text{Accuracy}_{before} \right|
+\end{multline}
+
+Softmax Difference \cite{carbone2020a} captures prediction confidence change. Robustness is $1 - \text{softmax difference}$. Previous work \cite{isrobustnessdongsu2018} highlights the trade-off between accuracy and robustness.
+    \begin{multline} \label{eq:softmaxdifference}
+    \text{Softmax Difference}=\\ \frac{1}{N} \sum_{j=1}^{N} 
+    \Big|
+    \big\langle f(\mathbf{x}_j, \mathbf{w}) \big\rangle_{p(\mathbf{w}|D)}
+    -
+    \big\langle f(\tilde{\mathbf{x}}_j, \mathbf{w}) \big\rangle_{p(\mathbf{w}|D)}
+    \Big|_{\infty}
+    \end{multline}
+Our research questions rely on comparing multiple model variations and deciding which one is the best based on the given result. While both robustness measures are useful in achieving our goals on its own, interpreting both of the robustness measure at the same time may result in confusion, e.g., one model might have a low absolute accuracy difference, but a high softmax difference. To make the model comparison easier, we devise a new aggregate robustness measure called the Aggregate Robustness Index (ARIn), which takes Equation (\ref{eq:absaccdiff}) and Equation (\ref{eq:softmaxdifference}).
+
+
+% \begin{equation}
+% %\text{ARIn} = \sqrt{\frac{\left(\tilde{\Delta}_{\text{acc}}\right)^2 + \left(\tilde{\Delta}_{\text{softmax}}\right)^2}{2}}
+% \text{ARIn} = \sqrt{\frac{\left(\text{Absolute Accuracy Difference}\right)^2 + \left({\text{Softmax Difference}}\right)^2}{2}}
+% \label{eq:ARIn}
+% \end{equation}
+
+\begin{multline}
+\text{ARIn} = \sqrt{\frac{\begin{aligned} &\left(\text{Absolute Accuracy Difference}\right)^2 \\ &+ \left(\text{Softmax Difference}\right)^2 \end{aligned}}{2}}
+\label{eq:ARIn}
+\end{multline}
+
+
+%\subsection{Overview of Double Descent Experimental}
+
+%The focus of all experiments was to understand how the test error curve manifests under different conditions when the model complexity increasing. Model complexity can be increased by three methods: increasing units in a hidden layer, adding layers, or combining both.  Each experiment with different setting varied the network width and different experiments varied the number of layers to analyse its impact on test error to explore the occurrence of the double descent phenomenon. Table \ref{tab:experiment_settings} shows the approaches taken to increase model complexity and outlines the experimental conditions for LTC, QNN, and SNN models.
+
+%\textbf{Liquid Time-Constant Networks (LTCs)}: We utilized networks of four different depths, consisting of 1, 3, 5, and 10 layers. The width of each hidden layer was varied from 1 to 63, increasing in increments of 2.  After this, we further confirm whether the double descent phenomenon would occur by conducting additional experiments on a 5-layer LTC network but with a reduced step size of change in network width from 2 to 1. We built LTC models with multiple LTC layers followed by a fully connected output layer. Each LTC layer updates its hidden state using the following equation:
+%\[
+%h_t = \tau h_{t-1} + (1 - \tau) \cdot \text{ReLU}(W_{\text{in}} \cdot x_t + W_{\text{rec}} \cdot h_{t-1} + b)
+%\]
+%where \( h_t \) is the hidden state at time \( t \), \( \tau \) is the time constant, \( W_{\text{in}} \) and \( W_{\text{rec}} \) are input and recurrent weights, and \( b \) is the bias term. ReLU was selected for its simplicity and effectiveness.
+
+
+%\textbf{Quantized Neural Networks (QNNs)}: For CIFAR-10, we varied network complexity by increase parameter c from 1 to 63 and used Adam and SGD optimizers across different training epochs (20, 50, 80), label noise (0\%, 10\%, 20\%), with and without learning rate scheduler. For MNIST, we conducted two experiments: one using the same architecture and settings as CIFAR-10 (10\% label noise, 50 training epochs, without learning rate scheduler), and a second with a simplified QNN to explore the effect of reduced network complexity. The QNN was based on a 5-layer CNN, quantised using PyTorch's Quantisation-Aware Training (QAT). 
+% Two different QNN architectures were employed: one with four convolutional layers and another with two convolutional layers. For the four-layer model, the widths of the convolutional layers were set as c, 2c, 4c, 8c, while for the two-layer QNN, the widths were c, 2c. The parameter c was varied from 1 to 64 in increments of 2.
+
+%\textbf{Spiking Neural Networks (SNNs)}: We used models with two different depths, consisting of 2 and 4 layers. The width of each hidden layer was varied from 10 to 2000, increasing in increments of 50. Our models used a two-layer and a four-layer architectures with fully connected layers followed by Leaky Integrate-and-Fire (LIF) neurons.

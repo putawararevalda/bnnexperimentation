@@ -1,0 +1,136 @@
+
+\subsection{Robust Machine Learning Systems}
+\noindent
+
+\subsubsection{Robustness against Adversarial Attack}
+
+\iffalse
+\begin{enumerate}
+\item \cite{Blaas2021} Blaas 2021 
+\item augmented robustness and the result of that research \cite{essbai2024a}
+\item SEBR Robust Bayesian Neural Networks by Spectral Expectation Bound
+Regularization : 2021
+\item SGLD Bayesian Learning via Stochastic Gradient Langevin Dynamic: 2011
+\item Carbone's research : June 2020
+\end{enumerate}
+\fi
+
+Before we take a look into robustness of neural networks against SEUs/bitflips, we will see what are the defenses against adversarial attack applied in recent research, especially for Bayesian Neural Networks.
+
+%\textbf{Stochastic Gradient Langevin Dynamics (SGLD)} did not address adversarial attack directly, but focuses on how deterministic model is overconfident to point estimate of weights used. SGLD was proposed in \cite{sgld2011} by adding noise during training while behaving similar to the Stochastic Gradient Descent (SGD). The final model predictions come from averaging many sampled parameter values. The robustness that is addressed in this paper is more related to how the model does not overfit and provide uncertainty, not reliability-related robustness. 
+
+%In \cite{carbone2020a}, the author observed how Bayesian Neural Network is robust against \textbf{gradient-based adversarial attacks} e.g. Fast Gradient Sign Method (FGSM) and Projected Gradient Descent (PGD). This work explains that BNNs naturally mitigate gradient-based attacks because of the Bayesian posterior averaging.
+
+%On the other hand, work in \cite{Blaas2021} claims the contrary, showing that BNNs trained with with accurate posterior inference (e.g. Hamiltonian Monte Carlo, advanced VI) \textbf{do not automatically gain adversarial robustness} compared to standard deterministic neural networks. This work showed an alternative result from \cite{carbone2020a}, in which the work shows that bayesian averaging does not wash out adversarial directions as strongly as the theory predicts. One of the proof is the non-vanishing gradients on the HMC sampling and susceptibility to PGD and FGSM attacks.
+
+%\textbf{Spectral Expectation Bound Regularization (SEBR)} is introduced in \cite{sebr2021}. SEBR is a regularization technique added during training to limit the Lipschitz constant of BNN layers, which in the end improve robustness. It works against gradient-based attacks like FGSM and PGD by penalizing the expected spectral norm of each weight matrix (mean + variance), constraining how much the model output can change for a small input perturbations. The penalty term in SEBR is shown in $L_{\text{total}} = L_{\text{ELBO}} + \lambda \cdot L_{\text{SEBR}}$, in which $\lambda$ is the trade-off factor for the SEBR loss.
+
+
+%\textbf{Stochastic Gradient Langevin Dynamics (SGLD)} \cite{sgld2011} introduces noise in training to capture uncertainty, although it is not specifically designed for adversarial robustness.
+
+BNNs have been reported to mitigate gradient-based input attacks, e.g., Fast Gradient Sign Method (FGSM) and Projected Gradient Descent (PGD), due to posterior averaging \cite{carbone2020a}. There are also methods that employ multi-task loss combining unsupervised feature scattering and supervised margin loss to generate diverse and stronger adversarial examples for BNN training \cite{CHEN2022156}. \textbf{Spectral Expectation Bound Regularization (SEBR)} \cite{sebr2021} also increases robustness against gradient-based attacks by regularizing the spectral norm of weights. Contradicting work includes \cite{Blaas2021}, which shows that a more accurate posterior inference (e.g., Hamiltonian Monte Carlo, advanced VI) does not guarantee robustness.
+
+
+
+%\begin{equation}
+%L_{\text{total}} = L_{\text{ELBO}} + \lambda \cdot L_{\text{SEBR}}
+%\label{eq:sebrpenalty}
+%\end{equation}
+
+\subsubsection{Robustness against Weight Perturbation}
+
+%The term Single Event Upset Induced Parameter Perturbation (SIPP) is introduced in \cite{yan_2020a}. This paper reiterates SEU effect in flipping bits in memory or registers, especially in SRAM where model parameters are stored. It also shows that single bit-flip can severely degrade DNN accuracy, dropping accuracy from 70\% to 1\% in the experiment on using ResNet56 on CIFAR-100. This paper proposes hardware-level protection schemes : Triple Modular Redundancy (TMR), Error-Correcting Codes (ECC), and Selective Protection on top of TMR and ECC.
+
+Single Event Upset Induced Parameter Perturbation (SIPP) \cite{yan_2020a} shows that SEUs in memory or parameters can drastically degrade accuracy. Proposed defense in this work includes Triple Modular Redundancy (TMR), Error-Correcting Codes (ECC), and Selective Protection on both.
+
+%The work in \cite{dennispoperobustcnn} take a different approach in developing robust machine learning systems against weight perturbation by focusing on model-intrinsic robustness instead of hardware fault tolerance. This paper proposes two new bounded activation functions, namely Weighted Gaussian (WG) and Rectified Weighted Gaussian (RWG) that limits the effect of flipped bits. This paper also introduce smartpooling that ignores unreasonable outlier activations above threshold. Finally, this paper also shown that dropout introduced during training helped maintain accuracy while a smaller effect is also shown by introducing weight decay during training.
+
+Model-intrinsic robustness is explored in \cite{dennispoperobustcnn}, where Weighted Gaussian (WG) and Rectified Weighted Gaussian (RWG) activation functions, smart pooling, dropout, and weight decay show improvements in deterministic CNNs under SEUs.
+
+While both of the works mentioned previously take an interest in the robustness of deterministic neural networks, especially variants of convolutional neural networks, against weight/bias perturbation, \textbf{no significant research is found on observing Bayesian Neural Networks (BNNs) robustness against weight perturbation yet}. This area of research is what this paper aims to look into.
+
+\subsection{Single Event Upsets}
+\noindent
+
+Single Event Effects (SEEs), as described in \cite{petersen_single_2011}, happened through the action of a single ionizing particle as it penetrates sensitive nodes inside an electronic device, illustrated in Figure \ref{fig:ionizationtIllustration}. It has been linked to a real-world system faults, for example, the 2008 Qantas A330 altitude change incident is suspected to be caused by a possible SEE \cite{ATSB2009QF72}. Some variants of SEEs are Single Event Upsets (SEUs), Multibit Upsets (MBUs), and Single Event Burnouts (SEBs).
+
+%On October 2008, a Qantas A330 flight from Singapore to Perth experienced a sudden and unexpected altitude change, resulting in 36 crew and passengers injured. The Australian Transport Safety Bureau (ATSB) considers SEE as a possible cause of the accident \cite{ATSB2009QF72}. Some variants of SEEs are Single Event Upsets (SEUs), Multibit Upsets (MBUs), and Single Event Burnouts (SEBs).
+
+%The effect of SEEs can be as small as a tiny glitch inside a monitor to a substantial error that is life threatening
+%\cite{airsafeqantas}
+%\cite{petersen_single_2011}
+
+%Illustrations of heavy ions passing through a semiconductor, causing SEUs, is shown in Figure \ref{fig:ionizationtIllustration} (a) and (b). In Figure \ref{fig:ionizationtIllustration} (a), the ion creates a dense ionization track that generates enough charge to trigger an SEU. 
+
+%In Figure \ref{fig:ionizationtIllustration} (b), a proton causes a nuclear reaction inside the device, producing secondary heavy ions that deposit charge and may also result in an SEU.
+
+%SEUs or bit-flips have been simulated either by injecting non modifiable 0s or 1s into the weights of CNN layers at the software level to assess reliability and classify prediction deviations \cite{bosio2019}, or by injecting transient single and double bit flips into GPU registers and instruction outputs at the architecture level to study application-level Silent Data Corruptions (SDCs) \cite{hari2017sassifi}. Both studies show that SEUs can lead to incorrect or unsafe outputs in Deep Neural Networks, potentially degrading their reliability in safety-critical applications.  This research will follow a similar procedure to the SEU injection method in \cite{hari2017sassifi}, in which we will inject SEU (bitflip) on the weight/bias parameter of the model \textbf{when it is doing inference on a new data}. 
+
+SEUs have been simulated either at the software level, by forcing bit values in CNN weights \cite{bosio2019}, or at the hardware level, by injecting transient bit-flips into GPU registers \cite{hari2017sassifi}. Both approaches show that SEUs can cause incorrect outpurs in deep networks, reducing reliability in safety-critical tasks. This study follows \cite{hari2017sassifi}, introducing bit-flips to model weights and biases \textbf{when it is doing inference on a new data}. 
+
+%An example of the impact of bitflips to stored weight/bias is shown in Table \ref{table:robbothbitloc2}.
+
+\begin{figure}[h]
+\caption{Ionization path due to direct passage of heavy iron (a), and due to proton reaction in a device (b) as shown in \cite{petersen_single_2011}}
+\includegraphics[scale=0.60]{images/ionization_path.png}
+\centering
+\label{fig:ionizationtIllustration}
+\end{figure}
+
+The IEEE-754 standard (\cite{IEEE754-2019}) defines binary (32, 64, 128 bits) and decimal (64, 128 bits) floating-point (FP) formats. Modern CPUs and frameworks (e.g. PyTorch) support binary machine numbers (FP32, FP64) for efficiency despite limited precision. Since Pyro is built on PyTorch, this research uses FP32, making it important to understand floating-point representation for analyzing the effects of Single Event Upsets (SEUs) on weight and bias parameters stored in FP32.
+
+%\cite{pytorchNumericalAccuracy}
+%\cite{pyroIntroductionPyro}
+
+\subsection{Bayesian Neural Networks}
+\noindent
+
+In this section, we will take a look at the concept of Bayesian Neural Networks. This research assumes that the reader is familiar with the basics of Neural Networks, including the concept of feed-forward and backpropagation. The concept of Bayesian Neural Networks (BNNs) originated in the early 1990s. \cite{Mackay1992a} introduced a Bayesian framework for neural learning by trating weights and biases as probabilistic variables, addressing uncertainty and overfitting. 
+
+%The idea of Bayesian Neural Networks (BNNs) dates back to some research done in the early 1990s. One of the early prominent works in Bayesian Neural Networks is the work done in \cite{Mackay1992a}. In that research, although not explicitly mentioning Bayesian Neural Network (BNN), David J.C. Mackay proposes a quantitative and practical Bayesian framework for learning in feedforward networks. This research revolutionizes how to think about weight and biases by giving them a probabilistic interpretation within a learning model. This work criticized the backpropagation framework's limitations, such as arbitrary hyperparameter settings, high data demands, and a lack of uncertainty estimates.
+
+Equation \ref{eq:evidence} - \ref{eq:posterior} express the core of Bayesian learning. The marginal likelihood (Equation \ref{eq:evidence}) integrates over all weights configurations, embodying Occam's razor to balance model fit and complexity. Bayes' rule (Equation \ref{eq:posterior}) updates prior beliefs with data, yielding weight distributions that capture model uncertainty.
+
+%The Bayesian framework integrates over weight distributions (Equation \ref{eq:evidence} - \ref{eq:posterior}).
+
+%To fix the issues on the above points, Mackay proposed a Bayesian way of doing backpropagation by the following:
+
+%\begin{enumerate}
+%%\item Objective setting of control parameters: The bayesian framework uses evidence maximization to set the model hyperparameters initialized with associated priors. The marginal likelihood penalizes overfitting with Occam's razor, selecting the best model complexity by maximizing Equation (\ref{eq:evidence}).
+%\item Objective setting of control parameters: In the Bayesian framework, model hyperparameters are determined by maximizing the marginal likelihood, which integrates over the parameter space with respect to the chosen priors. It automatically balances model fit and complexity, ensuring that the selected model achieves the best trade-off without overfitting.
+%\begin{equation} \label{eq:occamsrazor}
+%P(\mathcal{D} \mid \mathcal{M}) = \int P(\mathcal{D} \mid \mathbf{w}, \mathcal{M}) \, P(\mathbf{w} \mid %\mathcal{M}) \, d\mathbf{w}
+%\end{equation}
+%\item Demand of data size: Bayesian Inference penalizes complexity automatically, as shown in Equation (\ref{eq:evidence}), by automatically trades off data fit vs model complexity without the need for a separate validation or test set to detect overfitting.
+%\item Lack of quantified uncertainty: Bayesian training infers a distribution over weights shown in Equation (\ref{eq:posterior}).
+
+%The effective number of well-defined parameters ($\gamma$), are those weights, given the data, that are actually being used by the model in a meaningful way. With the above equation, well-defined parameters can be spotted by seeing which parameters have less variance, showing the model's confidence in their value.
+%\end{enumerate}
+
+
+
+
+
+\begin{equation}
+P(\mathcal{D} \mid \mathcal{M}) 
+= \int P(\mathcal{D} \mid \mathbf{w}, \mathcal{M}) \,
+      P(\mathbf{w} \mid \mathcal{M}) \, d\mathbf{w}
+\label{eq:evidence}
+\end{equation}
+
+\begin{equation}
+p(\mathbf{w} \mid \mathcal{D}) \propto 
+   P(\mathcal{D} \mid \mathbf{w}) \, p(\mathbf{w})
+\label{eq:posterior}
+\end{equation}
+
+
+In \cite{Mackay1992a}, approximations are made to the posterior by using Laplace approximation and use Hessian of the loss to estimate posterior curvature. The term Bayesian Neural Network first coined in \cite{Neal1996bayesianlearning}. In that work, Radford M. Neal take the posterior distribution approximation to a new direction, by using Markov Chain Monte Carlo (MCMC) to not just do evidence maximization, but also sampling from the full posterior over weights, to approximate $p(\mathbf{w} \mid \mathcal{D})$. Illustration on how Bayesian Neural Networks differ to the Deterministic Neural Networks, in which each weight is assigned a distribution, is shown in Figure \ref{fig:BNNIllustration}.
+
+\begin{figure}[h]
+\caption{Illustration of Bayesian Neural Networks, as shown in \cite{blundell2015bayesbybackprop}}
+\includegraphics[scale=0.30]{images/bayesbybackprop3.png}
+\centering
+\label{fig:BNNIllustration}
+\end{figure}
+

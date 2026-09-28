@@ -1,0 +1,160 @@
+\begin{thebibliography}{}
+
+\bibitem[{Australian Transport Safety Bureau}, 2009]{ATSB2009QF72}
+{Australian Transport Safety Bureau} (2009).
+\newblock Interim factual report no.~2: In-flight upset involving airbus
+  a330-303, vh-qpa, 154 km west of learmonth, wa on 7 october 2008.
+\newblock Technical report, Australian Transport Safety Bureau, Canberra, ACT,
+  Australia.
+\newblock Aviation Occurrence Investigation AO-2008-070.
+
+\bibitem[Barber and Bishop, 1998]{bishopbarber98}
+Barber, D. and Bishop, C. (1998).
+\newblock Ensemble learning in bayesian neural networks.
+\newblock In {\em Generalization in Neural Networks and Machine Learning},
+  pages 215--237, United Kingdom. Springer.
+
+\bibitem[Bishop, 2007]{bishoppatternrecognition2007}
+Bishop, C.~M. (2007).
+\newblock {\em Pattern Recognition and Machine Learning (Information Science
+  and Statistics)}.
+\newblock Springer, 1 edition.
+
+\bibitem[Blaas, 2021]{Blaas2021}
+Blaas, A. (2021).
+\newblock {\em On the adversarial robustness of Bayesian machine learning
+  models}.
+\newblock PhD thesis, University of Oxford.
+\newblock PhD thesis.
+
+\bibitem[Blundell et~al., 2015]{blundell2015bayesbybackprop}
+Blundell, C., Cornebise, J., Kavukcuoglu, K., and Wierstra, D. (2015).
+\newblock Weight uncertainty in neural networks.
+\newblock In {\em Proceedings of the 32nd International Conference on
+  International Conference on Machine Learning - Volume 37}, ICML'15, page
+  1613–1622. JMLR.org.
+
+\bibitem[{Bosio} et~al., 2019]{bosio2019}
+{Bosio}, A., {Bernardi}, P., {Ruospo}, A., and {Sanchez}, E. (2019).
+\newblock A reliability analysis of a deep neural network.
+\newblock In {\em 2019 IEEE Latin American Test Symposium (LATS)}, pages 1--6.
+
+\bibitem[Carbone et~al., 2020]{carbone2020a}
+Carbone, G., Wicker, M., Laurenti, L., Patane, A., Bortolussi, L., and
+  Sanguinetti, G. (2020).
+\newblock Robustness of bayesian neural networks to gradient-based attacks.
+\newblock {\em CoRR}, abs/2002.04359.
+
+\bibitem[Chen et~al., 2022]{CHEN2022156}
+Chen, X., Liu, C., Zhao, Y., Jia, Z., and Jin, G. (2022).
+\newblock Improving adversarial robustness of bayesian neural networks via
+  multi-task adversarial training.
+\newblock {\em Information Sciences}, 592:156--173.
+
+\bibitem[Dennis and Pope, 2025]{dennispoperobustcnn}
+Dennis, W. and Pope, J. (2025).
+\newblock A framework for developing robust machine learning models in harsh
+  environments: A review of cnn design choices.
+\newblock In {\em Proceedings of the 17th International Conference on Agents
+  and Artificial Intelligence - Volume 2: ICAART}, pages 322--333. INSTICC,
+  SciTePress.
+
+\bibitem[Feng et~al., 2024]{feng2024attackingbayesadversarialrobustness}
+Feng, Y., Rudner, T. G.~J., Tsilivis, N., and Kempe, J. (2024).
+\newblock Attacking bayes: On the adversarial robustness of bayesian neural
+  networks.
+
+\bibitem[Ferrante et~al., 2024]{10.3389/fninf.2024.1346723}
+Ferrante, M., Boccato, T., and Toschi, N. (2024).
+\newblock Enabling uncertainty estimation in neural networks through weight
+  perturbation for improved alzheimer's disease classification.
+\newblock {\em Frontiers in Neuroinformatics}, Volume 18 - 2024.
+
+\bibitem[Giuffrida et~al., 2020]{Giuffrida2020-ry}
+Giuffrida, G., Diana, L., de~Gioia, F., Benelli, G., Meoni, G., Donati, M., and
+  Fanucci, L. (2020).
+\newblock {CloudScout}: A deep neural network for on-board cloud detection on
+  hyperspectral images.
+\newblock {\em Remote Sens. (Basel)}, 12(14):2205.
+
+\bibitem[Hammell, 2018]{robert_hammell_2018}
+Hammell, R. (2018).
+\newblock Ships in satellite imagery.
+\newblock \url{https://www.kaggle.com/dsv/61115}.
+
+\bibitem[Hanif et~al., 2021]{Hanif2021}
+Hanif, M.~A., Khalid, F., Putra, R. V.~W., Teimoori, M.~T., Kriebel, F., Zhang,
+  J.~J., Liu, K., Rehman, S., Theocharides, T., Artusi, A., Garg, S., and
+  Shafique, M. (2021).
+\newblock {\em Robust Computing for Machine Learning-Based Systems}, pages
+  479--503.
+\newblock Springer International Publishing, Cham.
+
+\bibitem[Hari et~al., 2017]{hari2017sassifi}
+Hari, S. K.~S., Tsai, T., Stephenson, M., Keckler, S.~W., and Emer, J. (2017).
+\newblock {SASSIFI}: An architecture-level fault injection tool for gpu
+  application resilience evaluation.
+\newblock In {\em 2017 IEEE International Symposium on Performance Analysis of
+  Systems and Software (ISPASS)}, pages 249--258. IEEE.
+
+\bibitem[{IEEE Computer Society}, 2019]{IEEE754-2019}
+{IEEE Computer Society} (2019).
+\newblock {IEEE Standard for Floating-Point Arithmetic}.
+\newblock {IEEE Std 754-2019}.
+\newblock Published on 2019-07-22.
+
+\bibitem[MacKay, 1992]{Mackay1992a}
+MacKay, D. J.~C. (1992).
+\newblock A practical bayesian framework for backpropagation networks.
+\newblock {\em Neural Comput.}, 4(3):448–472.
+
+\bibitem[Neal, 1996]{Neal1996bayesianlearning}
+Neal, R.~M. (1996).
+\newblock {\em Bayesian Learning for Neural Networks}.
+\newblock Springer-Verlag, Berlin, Heidelberg.
+
+\bibitem[Pang et~al., 2021]{pang2021evaluatingrobustnessbayesianneural}
+Pang, Y., Cheng, S., Hu, J., and Liu, Y. (2021).
+\newblock Evaluating the robustness of bayesian neural networks against
+  different types of attacks.
+
+\bibitem[Petersen, 2011]{petersen_single_2011}
+Petersen, E. (2011).
+\newblock {\em Single Event Effects in Aerospace}.
+\newblock {Wiley}.
+
+\bibitem[Santos et~al., 2019]{santos_2019a}
+Santos, F. F.~d., Pimenta, P.~F., Lunardi, C., Draghetti, L., Carro, L., Kaeli,
+  D., and Rech, P. (2019).
+\newblock Analyzing and increasing the reliability of convolutional neural
+  networks on gpus.
+\newblock {\em IEEE Transactions on Reliability}, 68(2):663--677.
+
+\bibitem[Shafique et~al., 2021]{shafique_2021}
+Shafique, M., Naseer, M., Theocharides, T., Kyrkou, C., Mutlu, O., Orosa, L.,
+  and Choi, J. (2021).
+\newblock Robust machine learning systems: Challenges, current trends,
+  perspectives, and the road ahead.
+\newblock {\em CoRR}, abs/2101.02559.
+
+\bibitem[Su et~al., 2018]{isrobustnessdongsu2018}
+Su, D., Zhang, H., Chen, H., Yi, J., Chen, P., and Gao, Y. (2018).
+\newblock Is robustness the cost of accuracy? - {A} comprehensive study on the
+  robustness of 18 deep image classification models.
+\newblock {\em CoRR}, abs/1808.01688.
+
+\bibitem[Yan et~al., 2020]{yan_2020a}
+Yan, Z., Shi, Y., Liao, W., Hashimoto, M., Zhou, X., and Zhuo, C. (2020).
+\newblock When single event upset meets deep neural networks: Observations,
+  explorations, and remedies.
+\newblock In {\em 2020 25th Asia and South Pacific Design Automation Conference
+  (ASP-DAC)}, pages 163--168.
+
+\bibitem[Zhang et~al., 2021]{sebr2021}
+Zhang, J., Hua, Y., Xue, Z., Song, T., Zheng, C., Ma, R., and Guan, H. (2021).
+\newblock Robust bayesian neural networks by spectral expectation bound
+  regularization.
+\newblock In {\em 2021 IEEE/CVF Conference on Computer Vision and Pattern
+  Recognition (CVPR)}, pages 3814--3823.
+
+\end{thebibliography}

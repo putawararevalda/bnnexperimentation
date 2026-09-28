@@ -1,0 +1,844 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the EuroSAT Bayesian CNN trains</title>
+<style>
+:root {
+  --bg: #0f1115;
+  --bg-raised: #171a21;
+  --bg-code: #12151b;
+  --fg: #d7dbe3;
+  --fg-dim: #949cab;
+  --fg-bright: #f2f4f8;
+  --accent: #7dd3a0;
+  --accent-dim: #3f6b53;
+  --caution: #e8b563;
+  --rule: #262b35;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --measure: 68ch;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.65 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+.layout { display: flex; align-items: flex-start; gap: 3rem; max-width: 1180px; margin: 0 auto; padding: 0 1.5rem; }
+#toc {
+  position: sticky; top: 0; flex: 0 0 15rem; padding: 3rem 0;
+  max-height: 100vh; overflow-y: auto;
+}
+#toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+#toc a {
+  display: block; padding: 0.35rem 0; color: var(--fg-dim);
+  text-decoration: none; font-size: 0.875rem; border-left: 2px solid transparent;
+  padding-left: 0.75rem; counter-increment: toc;
+}
+#toc a::before { content: counter(toc) ". "; color: var(--accent-dim); }
+#toc a:hover { color: var(--fg-bright); }
+#toc a.active { color: var(--accent); border-left-color: var(--accent); }
+main { flex: 1 1 auto; padding: 3rem 0 8rem; min-width: 0; }
+h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 0.5rem; color: var(--fg-bright); letter-spacing: -0.02em; }
+.subtitle { color: var(--fg-dim); max-width: var(--measure); margin: 0 0 3rem; }
+h2 { font-size: 1.4rem; margin: 3.5rem 0 1rem; color: var(--fg-bright); letter-spacing: -0.01em; }
+h3 { font-size: 1.05rem; margin: 2rem 0 0.5rem; color: var(--fg-bright); }
+p, li { max-width: var(--measure); }
+section { scroll-margin-top: 2rem; }
+section + section { border-top: 1px solid var(--rule); padding-top: 0.5rem; }
+code { font-family: var(--mono); font-size: 0.9em; background: var(--bg-raised); padding: 0.1em 0.35em; border-radius: 3px; }
+pre {
+  background: var(--bg-code); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 1rem; overflow-x: auto; font-size: 0.82rem; line-height: 1.55;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+.excerpt-label {
+  font-family: var(--mono); font-size: 0.72rem; color: var(--fg-dim);
+  margin: 1.5rem 0 0.35rem; display: block; letter-spacing: 0.02em;
+}
+.num { color: var(--accent); font-family: var(--mono); font-size: 0.95em; }
+.caveat {
+  border-left: 3px solid var(--caution); background: rgba(232, 181, 99, 0.06);
+  padding: 0.9rem 1.1rem; margin: 1.5rem 0; max-width: var(--measure);
+  border-radius: 0 4px 4px 0;
+}
+.caveat strong { color: var(--caution); display: block; margin-bottom: 0.3rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.caveat p { margin: 0.4rem 0 0; font-size: 0.94rem; }
+.demo {
+  background: var(--bg-raised); border: 1px solid var(--rule); border-radius: 8px;
+  padding: 1.25rem; margin: 2rem 0; max-width: var(--measure);
+}
+.demo h3 { margin-top: 0; }
+.demo canvas { width: 100%; height: auto; display: block; border-radius: 4px; }
+.controls { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; margin: 1rem 0 0; font-size: 0.9rem; }
+.controls label { display: flex; align-items: center; gap: 0.4rem; color: var(--fg-dim); }
+button {
+  font: inherit; font-size: 0.875rem; background: var(--accent-dim); color: var(--fg-bright);
+  border: none; border-radius: 4px; padding: 0.4rem 0.9rem; cursor: pointer;
+}
+button:hover { background: var(--accent); color: var(--bg); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+.readout { font-family: var(--mono); font-size: 0.85rem; color: var(--fg-dim); margin-top: 0.85rem; }
+.readout b { color: var(--accent); font-weight: 600; }
+table { border-collapse: collapse; font-size: 0.9rem; margin: 1.5rem 0; width: 100%; max-width: var(--measure); }
+th, td { text-align: left; padding: 0.45rem 0.8rem 0.45rem 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { color: var(--fg-bright); font-weight: 600; }
+td code { font-size: 0.85em; }
+.pipeline { font-family: var(--mono); font-size: 0.78rem; color: var(--fg-dim); line-height: 1.9; overflow-x: auto; }
+.pipeline b { color: var(--accent); font-weight: 400; }
+@media (max-width: 900px) {
+  .layout { display: block; padding: 0 1.1rem; }
+  #toc { position: static; padding: 1.5rem 0 0; max-height: none; }
+  #toc ol { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; }
+  #toc a { border-left: none; padding-left: 0; }
+  #toc a.active { border-left: none; }
+  main { padding-top: 1.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+html { scroll-behavior: smooth; }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav id="toc" aria-label="Contents">
+  <ol>
+    <li><a href="#s1">Why Bayesian at all</a></li>
+    <li><a href="#s2">The model</a></li>
+    <li><a href="#s3">The prior</a></li>
+    <li><a href="#s4">The guide</a></li>
+    <li><a href="#s5">The ELBO</a></li>
+    <li><a href="#s6">The SVI loop</a></li>
+    <li><a href="#s7">Checkpointing</a></li>
+    <li><a href="#s8">MC-10 inference</a></li>
+    <li><a href="#s9">Knobs and artifacts</a></li>
+  </ol>
+</nav>
+<main>
+  <h1>How the EuroSAT Bayesian CNN trains</h1>
+  <p class="subtitle">A walk through <code>scripts/train_eurosat.py</code> and everything it calls &mdash; the model, the prior, the guide, the ELBO, and the ten-sample Monte&nbsp;Carlo average that turns a distribution over weights into a single prediction.</p>
+
+  <section id="s1">
+    <h2>1. Why Bayesian at all</h2>
+    <p>An ordinary CNN learns one number per weight: training converges to a single point estimate, and that point estimate <em>is</em> the model. This network learns something different &mdash; a <em>distribution</em> over every one of its <span class="num">183,242</span> weights and biases. Nothing here is a fixed float; each parameter is a random variable with its own learned mean and spread.</p>
+    <p>That has a concrete consequence: there is no single "the model" you can point to. Every forward pass draws a fresh sample of weights from those distributions, so feeding the same image through the network twice can produce two slightly different sets of logits. Prediction becomes an average over many such draws rather than one deterministic pass.</p>
+    <p>Why this project cares: it studies what a single bit-flip in one weight does to a trained network. A network whose weights are already understood as a spread, rather than a fixed point, gives a principled way to ask whether a corrupted weight looks like an outlier against the distribution it was supposed to come from.</p>
+    <p>This page covers the pipeline that produces that trained distribution: data &rarr; model &rarr; prior &rarr; guide &rarr; ELBO &rarr; SVI loop &rarr; checkpoint &rarr; MC-10 evaluation. It does not cover SEU injection, ShipsNet, or the deterministic baseline &mdash; those live elsewhere in the repo.</p>
+  </section>
+
+  <section id="s2">
+    <h2>2. The model</h2>
+    <p>Shape of a forward pass through the network, from input image to class logits:</p>
+    <div class="pipeline">input 3x64x64  &rarr;  conv1 3-&gt;32, k=3, pad=1  &rarr;  <b>32x64x64</b>  &rarr;  activation<br>
+  &rarr;  pool 2x2  &rarr;  <b>32x32x32</b><br>
+  &rarr;  conv2 32-&gt;64, k=3, pad=1  &rarr;  <b>64x32x32</b>  &rarr;  activation<br>
+  &rarr;  pool 2x2  &rarr;  <b>64x16x16</b><br>
+  &rarr;  flatten  &rarr;  <b>16,384</b><br>
+  &rarr;  fc1 16,384-&gt;10  &rarr;  <b>10 logits</b></div>
+
+    <p>Every weight and bias in that pipeline is a latent variable, not a stored number. Counting them:</p>
+    <table>
+      <thead><tr><th>Layer</th><th>Weights</th><th>Biases</th></tr></thead>
+      <tbody>
+        <tr><td>conv1</td><td>864</td><td>32</td></tr>
+        <tr><td>conv2</td><td>18,432</td><td>64</td></tr>
+        <tr><td>fc1</td><td>163,840</td><td>10</td></tr>
+        <tr><td><strong>Total</strong></td><td colspan="2"><strong><span class="num">183,242</span> latent variables</strong></td></tr>
+      </tbody>
+    </table>
+
+    <p>The layers themselves are declared like this:</p>
+    <span class="excerpt-label">src/models/bayesian_cnn.py:89-108</span>
+    <pre data-src="src/models/bayesian_cnn.py:89-108"><code>        self.conv1 = PyroModule[nn.Conv2d](3, 32, kernel_size=3, padding=1)
+        self.conv1.weight = PyroSample(self._make_prior([32, 3, 3, 3]))
+        self.conv1.bias = PyroSample(self._make_prior([32]))
+
+        self.conv2 = PyroModule[nn.Conv2d](32, 64, kernel_size=3, padding=1)
+        self.conv2.weight = PyroSample(self._make_prior([64, 32, 3, 3]))
+        self.conv2.bias = PyroSample(self._make_prior([64]))
+
+        self.pool = (
+            SmartPool(kernel_size=2, stride=2, threshold=pool_threshold, detect_only=pool_detect_only)
+            if smartpool_switch
+            else nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+
+        if dropout_switch:
+            self.dropout = nn.Dropout(p=dropout_p)
+
+        self.fc1 = PyroModule[nn.Linear](64 * 16 * 16, num_classes)
+        self.fc1.weight = PyroSample(self._make_prior([num_classes, 64 * 16 * 16]))
+        self.fc1.bias = PyroSample(self._make_prior([num_classes]))</code></pre>
+
+    <p><code>PyroModule[nn.Conv2d]</code> is a normal <code>Conv2d</code> whose parameters can be replaced by random variables. Assigning <code>PyroSample(...)</code> to <code>.weight</code> means "this is drawn from that distribution, freshly, on each forward pass" &mdash; not "this is a stored tensor."</p>
+
+    <p>The forward pass itself:</p>
+    <span class="excerpt-label">src/models/bayesian_cnn.py:128-144</span>
+    <pre data-src="src/models/bayesian_cnn.py:128-144"><code>    def forward(self, x, y=None):
+        x = self.activation_fn(self.conv1(x))
+        x = self.pool(x)
+        x = self.activation_fn(self.conv2(x))
+        x = self.pool(x)
+
+        if self.dropout_switch and self.training:
+            x = self.dropout(x)
+
+        x = x.view(x.size(0), -1)
+        logits = self.fc1(x)
+
+        if y is not None:
+            with pyro.poutine.scale(scale=self.obs_scale):
+                with pyro.plate("data", x.size(0)):
+                    pyro.sample("obs", dist.Categorical(logits=logits), obs=y)
+        return logits</code></pre>
+
+    <p>This is ordinary PyTorch until the last block. <code>pyro.sample("obs", dist.Categorical(logits=logits), obs=y)</code> is the statement "the observed labels came from a Categorical parameterised by these logits" &mdash; it is what connects the network to the data and makes the ELBO computable. When <code>y is None</code> (inference), that block is skipped and you just get logits back.</p>
+
+    <p>Note the <code>pyro.poutine.scale(scale=self.obs_scale)</code> wrapper visible here &mdash; section&nbsp;5 covers what it does to the ELBO.</p>
+
+    <p>Data loading, briefly: EuroSAT is 27,000 satellite images across 10 land-use classes. Training uses a pre-computed stratified split loaded from a pickle &mdash; 21,600 train / 5,400 test, zero overlap &mdash; with every image resized to 64x64 and normalised with dataset-specific per-channel mean and std.</p>
+
+    <span class="excerpt-label">src/data/eurosat.py:35-51</span>
+    <pre data-src="src/data/eurosat.py:35-51"><code>    dataset = datasets.EuroSAT(root=DATA_ROOT, transform=_base_transform(), download=True)
+
+    if random:
+        torch.manual_seed(random_seed)
+        train_size = int(split_ratio * len(dataset))
+        test_size = len(dataset) - train_size
+        train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
+    else:
+        with open(split_file, 'rb') as f:
+            split = pickle.load(f)
+        train_dataset = Subset(dataset, split['train'])
+        test_dataset = Subset(dataset, split['test'])
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
+                              num_workers=0, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size,
+                             num_workers=0, pin_memory=True)</code></pre>
+
+    <aside class="caveat">
+      <strong>Caveat</strong>
+      <p>The default split file is <code>datasplit/split_indices_v2.pkl</code>. Version&nbsp;1 (<code>split_indices.pkl</code>) is corrupt &mdash; the train set contained zero SeaLake images and overlapped the test set on 3,910 indices &mdash; and is kept on disk only for provenance. Any result produced against v1 is invalid.</p>
+    </aside>
+  </section>
+
+  <section id="s3">
+    <h2>3. The prior</h2>
+    <p>The prior is what you believe about a weight before seeing any data. Here it is centred at <code>mu = 0.0</code> and spread by <code>b</code>, and every one of the <span class="num">183,242</span> weights gets the same prior independently.</p>
+
+    <span class="excerpt-label">src/models/bayesian_cnn.py:117-126</span>
+    <pre data-src="src/models/bayesian_cnn.py:117-126"><code>    def _make_prior(self, shape):
+        if self.prior_dist == 'gaussian':
+            base = dist.Normal(self.prior_mu, self.prior_b)
+        elif self.prior_dist == 'laplace':
+            base = dist.Laplace(self.prior_mu, self.prior_b)
+        elif self.prior_dist == 'uniform':
+            base = UniformReal(-self.prior_b, self.prior_b)
+        else:
+            raise ValueError(f"Unsupported prior '{self.prior_dist}'. Choose: gaussian, laplace, uniform")
+        return base.expand(shape).to_event(len(shape))</code></pre>
+
+    <p>Each family gives <code>b</code> a different meaning:</p>
+    <ul>
+      <li><strong>Gaussian</strong> &mdash; <code>b</code> is the standard deviation. Weights concentrate near zero, large values are strongly discouraged.</li>
+      <li><strong>Laplace</strong> &mdash; <code>b</code> is the scale. Sharper peak at zero and heavier tails than a Gaussian of the same <code>b</code>: it prefers weights near exactly zero but is more tolerant of the occasional large one. The sparsity-inducing choice.</li>
+      <li><strong>Uniform</strong> &mdash; <code>b</code> is a hard half-width; every value in <code>[-b, +b]</code> is equally likely and nothing outside is possible.</li>
+    </ul>
+
+    <p><code>.expand(shape).to_event(len(shape))</code>: <code>expand</code> gives one independent draw per weight in the layer; <code>to_event</code> tells Pyro to treat the whole tensor as a single multi-dimensional random variable rather than a batch of independent ones, which is what makes the log-probabilities sum correctly.</p>
+
+    <p>The sweep uses <code>b</code> in 10.0, 1.0, 0.1. A <code>b</code> of 10.0 is an extremely weak prior (a conv weight of 8.0 is unremarkable); 0.1 is a strong pull toward zero.</p>
+
+    <div class="demo">
+      <h3>Demo: what <code>b</code> does to each prior</h3>
+      <canvas id="priorCanvas" width="720" height="300" role="img"
+              aria-label="Probability density of the selected prior family"></canvas>
+      <div class="controls">
+        <label><input type="radio" name="priorFam" value="gaussian" checked> Gaussian</label>
+        <label><input type="radio" name="priorFam" value="laplace"> Laplace</label>
+        <label><input type="radio" name="priorFam" value="uniform"> Uniform</label>
+        <label>b
+          <input type="range" id="priorB" min="0" max="2" step="1" value="1">
+          <b id="priorBOut" class="num">1.0</b>
+        </label>
+      </div>
+      <p class="readout">Each of the <b>183,242</b> weights is drawn from this distribution before the model sees a single image.</p>
+    </div>
+  </section>
+
+  <section id="s4">
+    <h2>4. The guide</h2>
+    <p>The prior says what you believed before. The <strong>posterior</strong> is what you should believe after seeing 21,600 images. It is intractable, so you approximate it with a <em>guide</em>: a simpler distribution whose parameters are learned. That approximation is the whole of variational inference.</p>
+
+    <p><code>AutoNormal</code> places an independent Gaussian on every latent weight, each with its own learned <code>loc</code> (centre) and <code>scale</code> (spread). So <span class="num">183,242</span> weights become <span class="num">366,484</span> learned numbers. The <em>prior</em> family and the <em>guide</em> family are separate choices &mdash; this codebase matches them (<code>AutoLaplace</code> for a Laplace prior, <code>AutoUniform</code> for uniform), but they need not match.</p>
+
+    <span class="excerpt-label">scripts/train_eurosat.py:84-92</span>
+    <pre data-src="scripts/train_eurosat.py:84-92"><code>def build_guide(prior_dist, model, b, device, init_scale=None):
+    scale = init_scale if init_scale is not None else 0.25 * b
+    if prior_dist == "gaussian":
+        return AutoNormal(model, init_scale=scale).to(device)
+    elif prior_dist == "laplace":
+        return AutoLaplace(model, init_scale=scale).to(device)
+    elif prior_dist == "uniform":
+        return AutoUniform(model, init_scale=scale).to(device)
+    raise ValueError(f"Unknown prior_dist: {prior_dist}")</code></pre>
+
+    <p><code>init_scale</code> is how wide each weight's approximate posterior starts. The default is <code>0.25 * b</code>, so it inherits the prior's scale &mdash; with <code>b=10.0</code> every weight starts with a spread of 2.5, which is enormous, and the first epochs are spent shrinking it. <code>--init-scale 0.01</code> starts tight instead.</p>
+
+    <aside class="caveat">
+      <strong>Caveat</strong>
+      <p><code>init_scale</code> defaults to <code>0.25 * b</code>, which ties the starting width of the posterior to the prior width. For <code>b = 10.0</code> that is an initial per-weight spread of 2.5. If a sweep row at <code>b = 10.0</code> trains badly, an over-wide initialisation is a likely cause before the prior itself is blamed.</p>
+    </aside>
+  </section>
+
+  <section id="s5">
+    <h2>5. The ELBO</h2>
+    <p>Two competing pressures, stated in words first: make the data likely, and stay close to the prior. The ELBO is their sum, and SVI maximises it (Pyro reports the negative, so the printed loss goes down).</p>
+
+    <p style="font-family: var(--mono); font-size: 0.95rem; color: var(--fg-bright); margin: 1.25rem 0;">
+      ELBO&nbsp;=&nbsp;E<sub>q</sub>[&nbsp;log&nbsp;p(y&nbsp;|&nbsp;x,&nbsp;w)&nbsp;]&nbsp;&minus;&nbsp;KL(&nbsp;q(w)&nbsp;&#8214;&nbsp;p(w)&nbsp;)
+    </p>
+
+    <p>The first term is the fit term (how well weights drawn from the guide explain the labels); the second is the complexity term (how far the guide has moved from the prior). <code>Trace_ELBO(num_particles=1)</code> estimates the first with a single weight draw per batch &mdash; cheap and noisy; <code>--num-particles</code> raises it.</p>
+
+    <p>The minibatch problem: the KL is paid once per step over <em>all</em> 183,242 weights, but each step sees only 54 of 21,600 images. Left uncorrected, the KL is effectively 400x over-weighted. <code>--scale-likelihood</code> fixes it by scaling the likelihood by <code>N / batch_size = 400</code>, which is what the <code>pyro.poutine.scale</code> wrapper in <code>forward</code> consumes.</p>
+
+    <span class="excerpt-label">scripts/train_eurosat.py:177-179</span>
+    <pre data-src="scripts/train_eurosat.py:177-179"><code>        if args.scale_likelihood:
+            model.obs_scale = len(train_loader.dataset) / train_loader.batch_size
+            print(f"Likelihood scaling ON: obs_scale = {model.obs_scale:.1f}")</code></pre>
+
+    <aside class="caveat">
+      <strong>Caveat &mdash; the two datasets optimise different objectives</strong>
+      <p><code>--scale-likelihood</code> is <em>off</em> by default, which preserves the original behaviour: <code>obs_scale = 1.0</code> and a KL term over-weighted by roughly 400x relative to a correct minibatch ELBO. The EuroSAT v02 runs were trained with it <em>on</em> (<code>obs_scale = 400.0</code>); ShipsNet folds 1 and 2 were trained with it <em>off</em>. Loss values are therefore not comparable across the two datasets, and neither are conclusions that depend on how hard the prior was pulling.</p>
+    </aside>
+
+    <div class="demo">
+      <h3>Demo: the two terms pulling against each other</h3>
+      <canvas id="elboCanvas" width="720" height="260" role="img"
+              aria-label="Relative size of the fit term and the KL term"></canvas>
+      <div class="controls">
+        <label>posterior moved from prior
+          <input type="range" id="elboMove" min="0" max="100" step="1" value="35">
+        </label>
+        <label><input type="checkbox" id="elboScale"> <code>--scale-likelihood</code> (obs_scale 400)</label>
+      </div>
+      <p class="readout">Illustrative only &mdash; these are not values from a real run. The point is the <em>ratio</em>: with scaling off, the KL term dominates the objective.</p>
+    </div>
+  </section>
+
+  <section id="s6">
+    <h2>6. The SVI loop</h2>
+    <p>One epoch is 400 batches of 54 images &mdash; the full 21,600-image train set, once. Each batch runs through <code>svi.step(images, labels)</code>, which does four things: draw a fresh set of weights from the guide, run the forward pass with those weights, compute the ELBO estimate from the resulting loss, and backpropagate &mdash; not into the weights themselves, which are samples rather than parameters, but into the guide's own <code>loc</code> and <code>scale</code> parameters, since those are what the optimiser can actually own. The optimiser is <code>ClippedAdam</code> at <code>lr=1e-3</code>.</p>
+
+    <span class="excerpt-label">src/training/svi.py:122-136</span>
+    <pre data-src="src/training/svi.py:122-136"><code>        for images, labels in tqdm(train_loader, desc=f"Epoch {epoch}/{num_epochs}"):
+            images, labels = images.to(device), labels.to(device).long()
+
+            loss_val = svi.evaluate_loss(images, labels)
+            loss_tensor = torch.tensor(loss_val)
+            if torch.isinf(loss_tensor) or torch.isnan(loss_tensor):
+                if return_inf_value is None:
+                    return_inf_value = float('inf') if loss_val > 0 else float('-inf')
+                continue
+
+            total_loss += svi.step(images, labels)
+            batches += 1
+
+        avg_loss = (total_loss / batches) if batches > 0 else (
+            return_inf_value if return_inf_value is not None else float('nan'))</code></pre>
+
+    <p><code>svi.evaluate_loss</code> is called first purely as a guard &mdash; it checks whether this batch's loss is finite before committing to a step.</p>
+
+    <aside class="caveat">
+      <strong>Caveat &mdash; silently dropped batches</strong>
+      <p>When the pre-check finds an infinite or NaN loss, the loop <code>continue</code>s. That batch is skipped entirely: no <code>svi.step</code>, no gradient, and it is excluded from the epoch's <code>batches</code> divisor, so the reported average loss looks normal. A run that quietly trains on a fraction of its data is indistinguishable from a healthy one in the loss CSV. It also costs an extra forward pass per batch, since the loss is computed twice.</p>
+    </aside>
+
+    <span class="excerpt-label">src/training/svi.py:142-142</span>
+    <pre data-src="src/training/svi.py:142-142"><code>        if epoch == 1 or epoch % 10 == 0 or epoch == num_epochs:</code></pre>
+
+    <aside class="caveat">
+      <strong>Caveat &mdash; sparse accuracy sampling</strong>
+      <p>Training accuracy is measured at epoch 1, every tenth epoch, and the final epoch. Over a 100-epoch run that is 11 measurements. The "best" checkpoint is the best of those 11, not the best of 100 &mdash; and the accuracy curve you plot has 11 points.</p>
+    </aside>
+
+    <p>Note also that accuracy here is measured with a <strong>single</strong> weight draw per batch (<code>pyro.poutine.trace(guide)</code> once), not the 10-sample average used at test time &mdash; so in-training accuracy is noisier and systematically a little worse than the final reported test accuracy.</p>
+  </section>
+
+  <section id="s7">
+    <h2>7. Checkpointing</h2>
+    <p>Three artifacts are saved whenever accuracy improves, and you need all three:</p>
+
+    <table>
+      <thead><tr><th>Artifact</th><th>File pattern</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Model</td><td><code>model_{act}_{prior}_epoch_best_{ts}.pth</code></td><td>Layer structure and any non-Bayesian buffers</td></tr>
+        <tr><td>Guide</td><td><code>guide_{act}_{prior}_epoch_best_{ts}.pth</code></td><td>The guide module's own state</td></tr>
+        <tr><td>Param store</td><td><code>param_store_{act}_{prior}_epoch_best_{ts}.pkl</code></td><td><strong>The essential one.</strong> Pyro keeps the learned <code>loc</code>/<code>scale</code> values in a global param store, and the guide is traced through it. Restore only the two <code>state_dict</code>s and you are still sampling from the last epoch's posterior.</td></tr>
+      </tbody>
+    </table>
+
+    <span class="excerpt-label">src/training/svi.py:178-194</span>
+    <pre data-src="src/training/svi.py:178-194"><code>            if acc > best_acc:
+                best_acc = acc
+                fname_model = model_filename_pattern.format(
+                    activation=act_name, prior=prior_name, epoch="best", timestamp=timestamp)
+                fname_guide = guide_filename_pattern.format(
+                    activation=act_name, prior=prior_name, epoch="best", timestamp=timestamp)
+                fname_ps = param_store_filename_pattern.format(
+                    activation=act_name, prior=prior_name, epoch="best", timestamp=timestamp)
+
+                best_model_path = os.path.join(save_dir, fname_model)
+                best_guide_path = os.path.join(save_dir, fname_guide)
+                best_ps_path = os.path.join(save_dir, fname_ps)
+
+                torch.save(model.state_dict(), best_model_path)
+                torch.save(guide.state_dict(), best_guide_path)
+                pyro.get_param_store().save(best_ps_path)
+                print(f"  >> New best ({acc * 100:.2f}%) - saved artifacts")</code></pre>
+
+    <aside class="caveat">
+      <strong>Caveat &mdash; "best" means best on training data</strong>
+      <p>The comparison is <code>acc &gt; best_acc</code> where <code>acc</code> is <em>training</em> accuracy. This path has no validation split, so the selected checkpoint is the epoch that best fit the data it was trained on. An overfit epoch can be banked as "best", and the test accuracy reported afterwards is then measured on a checkpoint chosen without reference to held-out data.</p>
+    </aside>
+
+    <p>The restore, at evaluation time:</p>
+    <span class="excerpt-label">scripts/train_eurosat.py:206-214</span>
+    <pre data-src="scripts/train_eurosat.py:206-214"><code>        if best_model_path and best_guide_path and best_ps_path:
+            model.load_state_dict(torch.load(best_model_path, map_location=device))
+            guide.load_state_dict(torch.load(best_guide_path, map_location=device))
+            # weights_only=False: the param store pickles constraint objects
+            # (torch.distributions.constraints._Real), which torch>=2.6 rejects
+            # under its weights_only=True default. Same load the SEU scripts use.
+            pyro.clear_param_store()
+            pyro.get_param_store().set_state(
+                torch.load(best_ps_path, map_location=device, weights_only=False))</code></pre>
+
+    <p>The <code>weights_only=False</code> argument is required because the param store pickles constraint objects that torch&nbsp;&gt;=&nbsp;2.6 refuses to load under its safer default. This same load is what the SEU scripts perform, which is what keeps accuracy tables and SEU baselines referring to one model.</p>
+  </section>
+
+  <section id="s8">
+    <h2>8. MC-10 inference</h2>
+    <p>The model is a distribution, but a prediction has to be a single class. The bridge: draw <code>S&nbsp;=&nbsp;10</code> complete sets of weights from the guide, run the batch through all 10, average the <strong>logits</strong>, then take the argmax of the average.</p>
+
+    <span class="excerpt-label">src/training/svi.py:239-253</span>
+    <pre data-src="src/training/svi.py:239-253"><code>    with torch.no_grad():
+        for images, labels in tqdm(loader, desc="Evaluating"):
+            images, labels = images.to(device), labels.to(device)
+            logits_mc = torch.zeros(num_samples, images.size(0), model.fc1.out_features, device=device)
+
+            for i in range(num_samples):
+                trace = pyro.poutine.trace(guide).get_trace(images)
+                replayed = pyro.poutine.replay(model, trace=trace)
+                logits_mc[i] = replayed(images)
+
+            avg_logits = logits_mc.mean(dim=0)
+            preds = torch.argmax(avg_logits, dim=1)
+            all_labels.extend(labels.cpu().numpy())
+            all_predictions.extend(preds.cpu().numpy())</code></pre>
+
+    <p>The four lines that matter:</p>
+    <ol>
+      <li><code>pyro.poutine.trace(guide).get_trace(images)</code> &mdash; draw one full set of weights and record it.</li>
+      <li><code>pyro.poutine.replay(model, trace=trace)</code> &mdash; run the model forced to use exactly those weights.</li>
+      <li><code>logits_mc.mean(dim=0)</code> &mdash; average across the 10 draws.</li>
+      <li><code>torch.argmax(avg_logits, dim=1)</code> &mdash; one class per image.</li>
+    </ol>
+
+    <p>The subtlety, stated plainly: averaging logits is not the same as averaging softmax outputs. Averaging logits is a geometric mean of the probabilities after renormalising; averaging softmax is the arithmetic mean, and is the one that corresponds to the posterior predictive distribution. This code does the former. Both are defensible; they are not identical, and any downstream metric computed on softmax outputs must be clear about which one it started from.</p>
+
+    <aside class="caveat">
+      <strong>Caveat &mdash; results are not reproducible run to run</strong>
+      <p>The 10 draws are unseeded. Evaluating the same checkpoint twice gives slightly different accuracy each time. This is real Monte&nbsp;Carlo noise, not a bug, but it means a small accuracy difference between two configurations may be nothing at all &mdash; the noise floor has to be measured before differences of that size can be read as signal.</p>
+    </aside>
+    <aside class="caveat">
+      <strong>Caveat &mdash; S = 10 is a fixed, unvalidated choice</strong>
+      <p><code>num_samples=10</code> is a default that was never swept. Whether the average has converged by 10 draws is an empirical question about this posterior's width, and it has not been checked.</p>
+    </aside>
+
+    <div class="demo">
+      <h3>Demo: watching 10 draws settle on an answer</h3>
+      <canvas id="mcCanvas" width="720" height="330" role="img"
+              aria-label="Individual sampled logits and their running mean across ten draws"></canvas>
+      <div class="controls">
+        <button id="mcStep">Draw sample</button>
+        <button id="mcAll">Draw all 10</button>
+        <button id="mcReroll">Reroll</button>
+      </div>
+      <p class="readout" id="mcReadout">Draws taken: <b>0</b> / 10</p>
+    </div>
+  </section>
+
+  <section id="s9">
+    <h2>9. Knobs and artifacts</h2>
+    <p>Four independent switches select which layers behave differently, stacked on top of the prior / activation / <code>b</code> sweep already covered. They are declared as a lookup table keyed by the <code>--variant</code> CLI flag:</p>
+
+    <span class="excerpt-label">scripts/train_eurosat.py:37-42</span>
+    <pre data-src="scripts/train_eurosat.py:37-42"><code>VARIANT_CONFIG = {
+    "00": {"smartpool": False, "dropout": False, "weight_decay": False, "label": "base"},
+    "01": {"smartpool": True,  "dropout": False, "weight_decay": False, "label": "smartpool"},
+    "02": {"smartpool": False, "dropout": True,  "weight_decay": False, "label": "dropout"},
+    "03": {"smartpool": False, "dropout": False, "weight_decay": True,  "label": "weight_decay"},
+}</code></pre>
+
+    <table>
+      <thead><tr><th>Variant</th><th>Label</th><th>What changes</th></tr></thead>
+      <tbody>
+        <tr><td>00</td><td><code>base</code></td><td>Plain <code>MaxPool2d</code>, no dropout, no weight decay</td></tr>
+        <tr><td>01</td><td><code>smartpool</code></td><td><code>SmartPool</code> replaces MaxPool, threshold 10.0 &mdash; a pooled window whose max exceeds the threshold takes the second-largest value instead</td></tr>
+        <tr><td>02</td><td><code>dropout</code></td><td><code>Dropout(p=0.5)</code> after conv2, training only</td></tr>
+        <tr><td>03</td><td><code>weight_decay</code></td><td><code>ClippedAdam</code> weight decay 1e-4</td></tr>
+      </tbody>
+    </table>
+
+    <p>Each variant runs the full sweep: 3 priors &times; 7 activations &times; 3 <code>b</code> values = <span class="num">63</span> combinations, all written to <code>results/eurosat/bayesian/results_eurosat_v02_{variant}/</code>. <code>--resume</code> skips combinations already listed in that directory's <code>completed_runs.txt</code>, and the marker file is re-read before every combination, so two windows can share one save directory without stepping on each other.</p>
+
+    <p>One combination, once it finishes, leaves behind eight files:</p>
+    <table>
+      <thead><tr><th>File</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td><code>model_{act}_{prior}_epoch_best_{ts}.pth</code></td><td>Model <code>state_dict</code> at the best epoch</td></tr>
+        <tr><td><code>guide_{act}_{prior}_epoch_best_{ts}.pth</code></td><td>Guide <code>state_dict</code> at the best epoch</td></tr>
+        <tr><td><code>param_store_{act}_{prior}_epoch_best_{ts}.pkl</code></td><td>Pyro param store &mdash; the learned <code>loc</code>/<code>scale</code></td></tr>
+        <tr><td><code>accuracy_results_{act}_{prior}_{ts}.csv</code></td><td>Train accuracy at each measured epoch (11 rows for a 100-epoch run)</td></tr>
+        <tr><td><code>losses_{act}_{prior}_{ts}.csv</code></td><td>Average ELBO loss per epoch (100 rows)</td></tr>
+        <tr><td><code>config_{act}_{prior}_{ts}.json</code></td><td>Activation, prior, epochs, best accuracy and its epoch, batch size, train size, prior <code>mu</code>/<code>b</code></td></tr>
+        <tr><td><code>training_results_{act}_{prior}_{ts}.png</code></td><td>Four-panel plot: loss, accuracy, <code>loc</code> stats, <code>scale</code> stats</td></tr>
+        <tr><td><code>predictions_{act}_{prior}_{ts}_{acc}.csv</code></td><td>True and predicted label per test image</td></tr>
+      </tbody>
+    </table>
+
+    <p>Note that <code>{act}</code> in every filename above is the activation <em>function's</em> <code>__name__</code>, not the CLI string that selected it &mdash; so <code>sinusoidal</code> is stored as <code>sin</code>, and <code>wg</code>/<code>rwg</code> as <code>_actWG</code>/<code>_actRWG</code>. This is why <code>bayesian_cnn.py</code> carries legacy aliases in its activation map: it has to accept back the names it once wrote out.</p>
+
+    <p>Where to go next: <code>scripts/eval_seu_eurosat.py</code>, which loads these checkpoints and injects bit-flips, is the subject of a future page.</p>
+  </section>
+
+</main>
+</div>
+<script>
+// Nav highlighting: mark the section currently in view.
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+  var sections = links.map(function (a) { return document.getElementById(a.hash.slice(1)); });
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var i = sections.indexOf(entry.target);
+      if (i < 0) return;
+      links.forEach(function (a) { a.classList.remove('active'); });
+      links[i].classList.add('active');
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+  sections.forEach(function (s) { if (s) observer.observe(s); });
+})();
+
+// Demo 1 — prior density shapes.
+(function demoPrior() {
+  var canvas = document.getElementById('priorCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height, PAD = 34;
+  var B_VALUES = [0.1, 1.0, 10.0];
+  var slider = document.getElementById('priorB');
+  var bOut = document.getElementById('priorBOut');
+  var css = getComputedStyle(document.documentElement);
+  var ACCENT = css.getPropertyValue('--accent').trim() || '#7dd3a0';
+  var RULE = css.getPropertyValue('--rule').trim() || '#262b35';
+  var DIM = css.getPropertyValue('--fg-dim').trim() || '#949cab';
+
+  function density(fam, x, b) {
+    if (fam === 'gaussian') {
+      return Math.exp(-0.5 * (x / b) * (x / b)) / (b * Math.sqrt(2 * Math.PI));
+    }
+    if (fam === 'laplace') {
+      return Math.exp(-Math.abs(x) / b) / (2 * b);
+    }
+    return Math.abs(x) <= b ? 1 / (2 * b) : 0;  // uniform
+  }
+
+  function family() {
+    var checked = document.querySelector('input[name="priorFam"]:checked');
+    return checked ? checked.value : 'gaussian';
+  }
+
+  function draw() {
+    var b = B_VALUES[Number(slider.value)];
+    var fam = family();
+    bOut.textContent = b.toFixed(1);
+
+    // Fixed x window so changing b visibly changes the shape.
+    var XMAX = 3, N = 481;
+    var xs = [], ys = [], peak = 0;
+    for (var i = 0; i < N; i++) {
+      var x = -XMAX + (2 * XMAX * i) / (N - 1);
+      var y = density(fam, x, b);
+      xs.push(x); ys.push(y);
+      if (isFinite(y) && y > peak) peak = y;
+    }
+    // Share a y-scale across families at b=1 so shapes are comparable.
+    var yMax = Math.max(peak, 0.05) * 1.12;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Axes
+    ctx.strokeStyle = RULE; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(PAD, H - PAD); ctx.lineTo(W - PAD, H - PAD);
+    ctx.stroke();
+    ctx.fillStyle = DIM; ctx.font = '11px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    [-3, -2, -1, 0, 1, 2, 3].forEach(function (t) {
+      var px = PAD + ((t + XMAX) / (2 * XMAX)) * (W - 2 * PAD);
+      ctx.fillText(String(t), px, H - PAD + 16);
+    });
+    ctx.fillText('weight value', W / 2, H - 6);
+
+    // Density curve
+    ctx.strokeStyle = ACCENT; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (var j = 0; j < N; j++) {
+      var px2 = PAD + ((xs[j] + XMAX) / (2 * XMAX)) * (W - 2 * PAD);
+      var py = H - PAD - Math.min(ys[j] / yMax, 1) * (H - 2 * PAD);
+      if (j === 0) ctx.moveTo(px2, py); else ctx.lineTo(px2, py);
+    }
+    ctx.stroke();
+
+    // Fill under the curve
+    ctx.lineTo(W - PAD, H - PAD); ctx.lineTo(PAD, H - PAD); ctx.closePath();
+    ctx.fillStyle = 'rgba(125, 211, 160, 0.13)';
+    ctx.fill();
+
+    // Annotation
+    ctx.fillStyle = DIM; ctx.textAlign = 'left'; ctx.font = '12px system-ui, sans-serif';
+    var note = fam === 'uniform'
+      ? 'Hard walls at ±' + b.toFixed(1) + ' — nothing outside is possible.'
+      : fam === 'laplace'
+        ? 'Sharp peak at 0, heavy tails: prefers near-zero weights, tolerates rare large ones.'
+        : 'Smooth bell: large weights are strongly discouraged.';
+    ctx.fillText(note, PAD, 20);
+    if (b === 10.0 && fam !== 'uniform') {
+      ctx.fillText('At b=10 the curve is nearly flat here — an almost uninformative prior.', PAD, 38);
+    }
+  }
+
+  slider.addEventListener('input', draw);
+  Array.prototype.forEach.call(
+    document.querySelectorAll('input[name="priorFam"]'),
+    function (r) { r.addEventListener('change', draw); });
+  draw();
+})();
+
+// Demo 2 — ELBO tradeoff. Illustrative shapes, not real run values.
+(function demoElbo() {
+  var canvas = document.getElementById('elboCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var move = document.getElementById('elboMove');
+  var scaled = document.getElementById('elboScale');
+  var css = getComputedStyle(document.documentElement);
+  var ACCENT = css.getPropertyValue('--accent').trim() || '#7dd3a0';
+  var CAUTION = css.getPropertyValue('--caution').trim() || '#e8b563';
+  var DIM = css.getPropertyValue('--fg-dim').trim() || '#949cab';
+  var BRIGHT = css.getPropertyValue('--fg-bright').trim() || '#f2f4f8';
+
+  function draw() {
+    var t = Number(move.value) / 100;          // 0 = at prior, 1 = far from prior
+    var obsScale = scaled.checked ? 400 : 1;
+    // Fit improves with distance from the prior, saturating; KL grows quadratically.
+    var fitRaw = 1 - Math.exp(-3.2 * t);
+    var fit = fitRaw * obsScale;
+    var kl = 60 * t * t;
+    var total = Math.max(fit + kl, 1e-6);
+
+    ctx.clearRect(0, 0, W, H);
+    var barX = 130, barW = W - barX - 40, barY = 70, barH = 54;
+
+    var fitW = (fit / total) * barW;
+    ctx.fillStyle = ACCENT;
+    ctx.fillRect(barX, barY, fitW, barH);
+    ctx.fillStyle = CAUTION;
+    ctx.fillRect(barX + fitW, barY, barW - fitW, barH);
+
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillStyle = DIM;
+    ctx.fillText('objective', barX - 12, barY + 33);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = BRIGHT;
+    ctx.font = '13px system-ui, sans-serif';
+    ctx.fillText('fit term  ' + Math.round((fit / total) * 100) + '%', barX, barY - 14);
+    ctx.textAlign = 'right';
+    ctx.fillText('KL term  ' + Math.round((kl / total) * 100) + '%', barX + barW, barY - 14);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = DIM;
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillText('obs_scale = ' + obsScale, barX, barY + barH + 26);
+    var verdict = scaled.checked
+      ? 'Likelihood weighted to the full 21,600-image dataset — the KL no longer swamps the fit.'
+      : 'Likelihood counts only the 54 images in this batch, while the KL covers all 183,242 weights.';
+    ctx.fillText(verdict, barX, barY + barH + 48);
+
+    ctx.fillStyle = DIM;
+    ctx.fillText(t < 0.08
+      ? 'Guide sits on the prior: KL is nearly zero, but the data is unexplained.'
+      : t > 0.85
+        ? 'Guide far from the prior: data fits well, complexity penalty is large.'
+        : 'Somewhere in between — this is what SVI is searching for.',
+      barX, 34);
+  }
+
+  move.addEventListener('input', draw);
+  scaled.addEventListener('change', draw);
+  draw();
+})();
+
+// Demo 3 — MC-10 averaging. Seeded PRNG so a given roll is repeatable.
+(function demoMC() {
+  var canvas = document.getElementById('mcCanvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var CLASSES = ['AnnualCrop', 'Forest', 'HerbVeg', 'Highway', 'Industrial',
+                 'Pasture', 'PermCrop', 'Residential', 'River', 'SeaLake'];
+  var TRUE_CLASS = 3;   // Highway — deliberately a contested case
+  var RIVAL = 8;        // River — the class it gets confused with
+  var css = getComputedStyle(document.documentElement);
+  var ACCENT = css.getPropertyValue('--accent').trim() || '#7dd3a0';
+  var CAUTION = css.getPropertyValue('--caution').trim() || '#e8b563';
+  var DIM = css.getPropertyValue('--fg-dim').trim() || '#949cab';
+  var BRIGHT = css.getPropertyValue('--fg-bright').trim() || '#f2f4f8';
+  var RULE = css.getPropertyValue('--rule').trim() || '#262b35';
+
+  var seed = 12345, samples = [], shown = 0;
+
+  function rand() {  // mulberry32
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function gauss() {
+    var u = Math.max(rand(), 1e-9), v = rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function generate() {
+    // Posterior mean logits: two plausible classes, the rest low.
+    var mean = CLASSES.map(function (_, i) {
+      if (i === TRUE_CLASS) return 2.4;
+      if (i === RIVAL) return 2.1;
+      return -0.4 + rand() * 0.8;
+    });
+    samples = [];
+    for (var s = 0; s < 10; s++) {
+      samples.push(mean.map(function (m) { return m + gauss() * 1.5; }));
+    }
+    shown = 0;
+  }
+
+  function runningMean(n) {
+    return CLASSES.map(function (_, c) {
+      var sum = 0;
+      for (var s = 0; s < n; s++) sum += samples[s][c];
+      return sum / n;
+    });
+  }
+  function argmax(v) {
+    var best = 0;
+    for (var i = 1; i < v.length; i++) if (v[i] > v[best]) best = i;
+    return best;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    var PAD_L = 92, PAD_R = 24, PAD_T = 46, rowH = 20, barTop = PAD_T + 8;
+    var plotW = W - PAD_L - PAD_R;
+    var LO = -4, HI = 7;
+    function xOf(v) { return PAD_L + ((v - LO) / (HI - LO)) * plotW; }
+
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.fillStyle = BRIGHT;
+    ctx.textAlign = 'left';
+    ctx.fillText(shown === 0
+      ? 'No draws yet. Each draw is a complete, different set of 183,242 weights.'
+      : 'Mean of ' + shown + ' draw' + (shown === 1 ? '' : 's') + ' (bars) vs. each individual draw (ticks).',
+      PAD_L - 68, 22);
+
+    var mean = shown > 0 ? runningMean(shown) : null;
+    var meanArg = mean ? argmax(mean) : -1;
+
+    for (var c = 0; c < CLASSES.length; c++) {
+      var y = barTop + c * rowH;
+      ctx.fillStyle = c === meanArg ? BRIGHT : DIM;
+      ctx.font = c === meanArg ? '600 11px ui-monospace, monospace' : '11px ui-monospace, monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(CLASSES[c], PAD_L - 10, y + 11);
+
+      ctx.strokeStyle = RULE; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(xOf(LO), y + 7.5); ctx.lineTo(xOf(HI), y + 7.5); ctx.stroke();
+
+      // Individual sampled logits as faint ticks
+      for (var s = 0; s < shown; s++) {
+        var xs = xOf(samples[s][c]);
+        ctx.strokeStyle = 'rgba(148, 156, 171, 0.5)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(xs, y + 2); ctx.lineTo(xs, y + 13); ctx.stroke();
+      }
+      // Running-mean bar
+      if (mean) {
+        var x0 = xOf(0), x1 = xOf(mean[c]);
+        ctx.fillStyle = c === meanArg ? ACCENT : 'rgba(125, 211, 160, 0.32)';
+        ctx.fillRect(Math.min(x0, x1), y + 4, Math.abs(x1 - x0), 8);
+      }
+    }
+
+    // Zero line
+    ctx.strokeStyle = RULE; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xOf(0), barTop); ctx.lineTo(xOf(0), barTop + CLASSES.length * rowH);
+    ctx.stroke();
+
+    // Verdict
+    ctx.textAlign = 'left'; ctx.font = '12px system-ui, sans-serif';
+    var yBot = barTop + CLASSES.length * rowH + 22;
+    if (shown === 0) {
+      ctx.fillStyle = DIM;
+      ctx.fillText('Press "Draw sample" to take one Monte Carlo sample.', PAD_L - 68, yBot);
+    } else {
+      var thisArg = argmax(samples[shown - 1]);
+      ctx.fillStyle = DIM;
+      ctx.fillText('This draw alone would predict: ' + CLASSES[thisArg], PAD_L - 68, yBot);
+      ctx.fillStyle = meanArg === TRUE_CLASS ? ACCENT : CAUTION;
+      ctx.fillText('Mean of ' + shown + ' predicts: ' + CLASSES[meanArg]
+        + (shown < 10 ? '' : '   ← this is what predict_data returns'), PAD_L - 68, yBot + 20);
+    }
+
+    document.getElementById('mcReadout').innerHTML =
+      'Draws taken: <b>' + shown + '</b> / 10';
+    document.getElementById('mcStep').disabled = shown >= 10;
+    document.getElementById('mcAll').disabled = shown >= 10;
+  }
+
+  document.getElementById('mcStep').addEventListener('click', function () {
+    if (shown < 10) { shown++; draw(); }
+  });
+  document.getElementById('mcAll').addEventListener('click', function () {
+    shown = 10; draw();
+  });
+  document.getElementById('mcReroll').addEventListener('click', function () {
+    generate(); draw();
+  });
+
+  generate();
+  draw();
+})();
+</script>
+</body>
+</html>

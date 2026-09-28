@@ -1,0 +1,570 @@
+
+
+
+
+%\section{\uppercase{Results}}
+%The summary of results of all the experiments are shown in appendix.
+
+
+%\subsection{Experiment 1: Liquid Time-Constant Networks}
+
+
+
+%In our experiments, we assessed the double descent phenomenon and generalization performance of Liquid Time-Constant (LTC) networks with varying depths (1, 3, 5, 10 layers) on the Fashion MNIST dataset. The models were trained for 50 epochs using the SGD optimizer and the \texttt{InverseSquareRootScheduler} learning rate scheduler. Training without the scheduler resulted in vanishing gradients, which prevented convergence. All LTC networks demonstrated strong generalization, with test error curves decreasing sharply as network width increased and stabilizing at consistently low values. Notably, the traditional U-shaped bias-variance curve was absent.
+
+%Of particular note is the behavior of the 5-layer LTC network, where the test error curve exhibited a subtle indication of double descent within the hidden layer width range of 1 to 10. The training error curve for this model can be seen to reach the interpolation threshold at approximately width 5, which is about the starting point for the test error to begin its second decline. This fact is consistent with the theory of double descent which is the test error will fall a second time after the interpolation threshold reached and further increases the likelihood of a double descent occurring in the 5-layer LTC network. However, this observation remains inconclusive, as the fluctuations could be attributed to training instability rather than a definitive double descent behaviour. To investigate further, we conducted an additional experiments with narrower width increments (increasing the hidden layer width by one unit at a time). The results continued to suggest a potential double descent pattern: the test error initially decreased as the hidden layer width increased from 1 to 3, slightly increased at width 4, and then decreased again. However, due to the short duration of the error increase, it is difficult to definitively confirm the presence of double descent in the LTC network.
+
+
+
+
+%Despite this ambiguity, our results imply that LTC networks may indeed be susceptible to double descent under certain conditions. However, the inherent simplicity of the Fashion MNIST dataset likely resulted in a rapid decline in training loss. This rapid convergence and the small size of the interpolation threshold may have caused the upward trend in test error to begin diminishing before it could fully manifest. Consequently, this could have obscured our ability to clearly observe the presence of the double descent phenomenon.  Future will be to evaluate double descent using the different layers and datasets.
+
+%The ultimate goal of training a network is to minimize test error to achieve optimal generalization. While we cannot definitively claim to have observed the double descent phenomenon in LTC networks, the consistent reduction in test error across all network depths as network width increased, demonstrates that the networks ultimately achieved robust generalization performance, meeting our primary objectives.
+
+%\begin{figure}[h]
+%    \centering
+%    \begin{minipage}[b]{0.40\textwidth}
+%        \centering
+%        (a)
+%        \includegraphics[width=\textwidth]{figure2/2.png}
+        % (a)\\ % Add label (a) here
+%    \end{minipage}
+%    \hfill
+%    \\
+%    \begin{minipage}[b]{0.40\textwidth}
+%        \centering
+%        (b)
+%        \includegraphics[width=\textwidth]{figure2/15.png}
+        % (b)\\ % Add label (b) here
+%    \end{minipage}
+%    \caption{(a) Test error curves for 1, 3, 5, and 10-layer LTC networks on Fashion MNIST using the SGD optimizer. LTCs did not show clear double descent phenomenon but generalized well. (b) Test error curves for 5-layer LTC networks on Fashion MNIST using the Adam optimizer. LTC did not show double descent phenomenon and generalized poorly.}
+%    \label{fig:ltc_layers}
+%\end{figure}
+
+%In addition to using the SGD optimizer, we explored the network using the Adam optimizer. Results shown in Figure~\ref{fig:ltc_layers} (b), revealed gradient vanishing and unstable test errors, resulting in inferior generalization compared to SGD. Based on these findings, we recommend using the SGD optimizer when training LTC networks on simple datasets like Fashion MNIST. Expanding both network width and depth can improve generalization without significant risk of overfitting. Future work will examine double descent across more diverse datasets and network configurations.
+
+%\subsection{Experiment 2: Quantised Neural Networks}
+
+
+%\begin{figure}[h]
+%    \centering    \includegraphics[width=0.36\textwidth]{figure2/4.png}
+%    \caption{Test error curve for 4-layer QNN models with label noise (0, 0.1, 0.2) using Adam optimizer, 50 epochs, without learning rate scheduler on CIFAR-10. QNNs show significant double descent phenomenon and this trend becomes more pronounced with increasing label noise.}
+%    \label{fig:qnn_1}
+%\end{figure}
+
+
+%\begin{figure}[h]
+%    \centering
+%    \includegraphics[width=0.36\textwidth]{figure2/5.png}
+%    \caption{Test error curve for 4-layer QNN with 0.1 label noise using Adam optimizer, 80 epochs, without learning rate scheduler on CIFAR-10. As the number of training epochs increases, the double descent trend becomes less noticeable and the generalisation capacity decreases.
+%}
+%    \label{fig:qnn_2}
+%\end{figure}
+
+%In our second set of experiments, we investigated the behavior of Quantized Neural Networks (QNNs) on CIFAR-10 to understand how quantization impacts the double descent phenomenon and generalization. Initial experiments used the Adam optimizer (learning rate 0.001, 50 epochs) under varying label noise levels (0, 0.1, 0.2), as shown in Figure~\ref{fig:qnn_1}. Results confirmed that quantization does not eliminate double descent. Moreover, the data noise did not disrupt the double descent phenomenon, and increasing label noise exacerbated the double descent phenomenon.
+
+%We then extended the training epochs to 80, keeping the learning rate at 0.001 and label noise at 0.1 (Figure~\ref{fig:qnn_2}). This weakened the magnitude of the second descent but notably worsened generalization performance, especially at higher model complexities, suggesting that network models with double descent phenomena do not always get good generalisation performance by simply increasing the model complexity and train epoch.
+
+
+
+%To understand this decline in performance, we conducted additional experiments where we monitored both training and test errors across all epochs. The results revealed that, particularly in networks with large hidden layer widths, test error initially decreased but subsequently increased as training continued. This suggests that prolonged training (i.e., excessive training epochs) can diminish the model's generalization ability.
+
+\iffalse
+\begin{figure}[h]
+    \centering
+    \begin{minipage}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figure2/6.png}
+        % (a)\\ % Add label (a) here
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figure2/7.png}
+        % (b)\\ % Add label (b) here
+    \end{minipage}
+    \caption{(a) Test error curve for 4-layer QNN with 0.1 label noise using Adam optimizer with higher learning rate and 20 epochs, without learning rate scheduler on CIFAR-10. The test error curve
+    did not show double descent trend and was highly unstable, indicating weak generalization ability. (b) Test error curve for 4-layer QNN with 0.1 label noise using Adam optimizer with higher learning rate and 20 epochs, with learning rate scheduler on CIFAR-10. The test error curve did not show double descent trend but demonstrated strong generalization ability.}
+    \label{qnn_4}
+\end{figure}
+\fi
+
+
+
+%To address this, we reduced training epochs to 20 and increased the learning rate to 0.1. However, the larger learning rate introduced instability due to exploding gradients, as shown in Figure~\ref{qnn_4}(a). Incorporating the StepLR scheduler (Figure~\ref{qnn_4}(b)) effectively eliminated the double descent phenomenon and improved generalization performance.
+
+
+%To explore whether the choice of optimizer affects the double descent phenomenon, we replaced Adam with SGD under the same conditions. Without a scheduler, the double descent pattern persisted but remained unstable  (Figure~\ref{qnn_5}(a)). Adding the StepLR scheduler stabilized the test error curve and improved generalization (Figure~\ref{qnn_5}(b)). Overall, SGD outperformed Adam in generalization performance but did not entirely eliminate double descent.
+
+%\begin{figure}[h!]
+%    \centering
+%    \includegraphics[width=0.4\textwidth]{figure2/10.png}
+%    \caption{Test error curve for 2- and 4-layer QNNs with 0.1 label noise using Adam optimizer, 50 epochs, without learning rate scheduler on MNIST. The 2-layer model exhibited the double descent phenomenon, whereas the 4-layer model did not.}
+%    \label{fig:qnn_3}
+%\end{figure}
+
+%In the two experiments conducted on the MNIST dataset, the results are illustrated in Figure~\ref{fig:qnn_3}. The blue line represents the performance of the original QNN model which does not show the double descent behaviour, while the red line depicts the results from the simplified QNN model which show the double descent behaviour. When comparing the blue line with the corresponding results in Figure~\ref{fig:qnn_3}, it becomes evident that when the experimental model and configuration remain unchanged, the use of a simpler dataset allows the model to learn the underlying patterns more effectively, leading to better generalization performance. However, although the simplified QNN model exhibited the double descent phenomenon, as shown by the red line, the generalization performance of the model was worse than complex model.
+
+
+
+%Through these experiments, we have established several important conclusions and recommendations for training QNNs:
+
+%1. \textbf{Persistence of Double Descent}: quantisation does not negate the occurrence of the double descent phenomenon. The characteristic double descent behavior observed in the original CNN architecture persists in the quantised version, confirming that the quantisation process alone does not eliminate this phenomenon.
+
+%2. \textbf{Data Noise}:Increased data noise may exacerbate the double descent phenomenon
+
+%3. \textbf{Mitigating Overfitting}: Several techniques, including reducing the learning rate, introducing a learning rate scheduler, and limiting the number of training epochs, effectively mitigate overfitting. In particular, the learning rate scheduler helps to eliminate the double descent phenomenon without affecting the generalisation ability of the model.
+
+%4. \textbf{Model Complexity vs. Generalization}: Our experiments indicate that simply increasing model complexity does not guarantee improved generalization. Even if there is a double descent behaviour, if the learning rate and training duration are not adjusted properly, the test error during the second descent may not drop below the U-curve lowest point or, in some cases, the traditional U-shaped curve may replace the double descent curve entirely. In such instances, the generalization error continues to rise after reaching its initial minimum, with no subsequent decline.
+
+%5. \textbf{Optimizer and scheduler}: The choice of optimizer and the use of a learning rate scheduler are crucial factors influencing the behavior of QNNs. In our experiment, SGD is better than Adam Optimizer but both can lead to unstable training outcomes and a noticeable decline in generalization performance, particularly under conditions of high learning rates and extended training durations. However, when combined with a learning rate scheduler, the model can provide a more stable and robust generalization performance.
+
+
+
+%In conclusion, when training QNNs, particularly on complex datasets like CIFAR-10, we must pay careful attention to the selection of optimizer, learning rate, training duration, and the use of learning rate schedulers. These factors play a crucial role in influencing the model's generalization performance and the occurrence of the double descent phenomenon. Future research should continue to explore these variables in order to further optimize the training of more type of QNNs.
+
+\subsection{Training Result}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{c|rrrrrrr|r}
+\toprule
+Model Variant  & DNN & BNN \\
+\midrule
+Model 0 &   \B{0}{.9757} &  \B{0}{.8288} \\
+Model 1 &   \B{0}{.9752} &  \B{1}{.8332} \\
+Model 2 &   \B{1}{.9763} &  \B{0}{.8276} \\
+Model 3 &   \B{0}{.9748} &  \B{0}{.8243} \\
+\midrule
+Average &   \B{0}{.9755} &  \B{0}{.8285} \\
+\bottomrule
+\end{tabular}
+\caption{Test accuracy of Bayesian and Deterministic CNN Models grouped by model variants}
+\label{table:activation_performance_deterministic_test}
+\end{table}
+
+Based on our findings in this chapter, \textbf{Bayesian CNN model is showing an inferior performance in test accuracy} compared to the deterministic CNN model. This observation is consistent across all activation functions, model variants, and Bayesian model activation function. The average accuracy of test data that can be achieved by the deterministic CNN model is 97.55\%, while the Bayesian CNN model can only achieve 82.85\%. it's suspected that the performance difference is inherent to whether we are implementing Bayesian or deterministic CNN model. Here are some factors that can possibly result in this observation:
+\begin{enumerate}%[noitemsep, topsep=0pt]
+%\item All weights and bias in the Bayesian CNN neural network are initialized with a similar prior parameter ($a$ and $b$), assuming that all weight and bias' distributions are following the same distribution. 
+\item All weights and bias in the Bayesian CNN neural network are initialized with the same prior distribution parameter ($a$ and $b$).
+\item Optimization of Bayesian Neural Networks with ELBO loss is harder compared to cross-entropy in deterministic CNN model. KL divergence in ELBO loss can pull the variational posterior distribution away from the optimal point to stay closer to the prior (posterior collapse).
+\end{enumerate}
+
+In the subsequent subchapters that measure robustness of deterministic CNN models and Bayesian CNN models, most table will provide the aggregate value of SEU robustness measure by grouping the experiment result based on several criteria and then averaging them. For simplicity, we denote these aggregated metrics as Average Absolute Accuracy Difference (AAAD) and Average Softmax Difference (ASD). Aggregated Robustness Index (ARIn) will be calculated based on these two values. The lowest value for each column will be typed in bold.
+
+%(e.g. model variation, activation function)
+
+\subsection{Robustness by model type (BNN vs DNN)}
+
+\iffalse
+\begin{figure}[H]
+    \centering
+    %\begin{minipage}[b]{0.4\textwidth}
+    %    \centering
+    %    \includegraphics[width=\textwidth]{figure2/6.png}
+    %    % (a)\\ % Add label (a) here
+    %\end{minipage}
+    %\hfill
+    \begin{minipage}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{robboth2.png}
+        % (b)\\ % Add label (b) here
+    \end{minipage}
+    \caption{Robustness of Deterministic and Bayesian CNN model}
+    \label{fig:robboth2}
+\end{figure}
+\fi
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.7\textwidth]{robboth2.png}
+    \caption{Robustness of Deterministic and Bayesian CNN model}
+    \label{fig:robboth2}
+\end{figure*}
+
+%Summary of absolute accuracy difference and softmax difference Deterministic vs Bayesian CNN
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Model Type & AAAD & ASD & ARIn \\
+\midrule
+DNN & \B{1}{.0149} & \B{0}{.2696} & \B{0}{.1909} \\
+BNN & \B{0}{.0244} & \B{1}{.1074} & \B{1}{.0779} \\
+\bottomrule
+\end{tabular}
+\caption{Summary of average absolute accuracy difference and average softmax difference Deterministic vs Bayesian CNN}
+\label{table:robbothcompare}
+\end{table}
+
+\subsubsection{Robustness of Deterministic CNN models}
+
+From Figure \ref{fig:robboth2}, we can infer that the impact of SEU on Absolute Accuracy Difference and Softmax Difference exhibits an approximately linear relationship, showing a clear correlation between the two performance metrics. This observation is similar from what has been observed from \cite{carbone2020a}, in which the author spotted a trade-off between pure accuracy and robustness (1 - softmax difference) for high performing deterministic networks against adversarial attack (FGSM).
+
+\subsubsection{Robustness of Bayesian CNN models}
+
+Contrary to the Deterministic CNN model SEU injection result that has a clear correlation between the two performance metric in a linear straight line, the performance shown by the Bayesian CNN model does not exhibit a same pattern. In Bayesian CNN Model SEU Injection from the figure above, some noticeable points make up a linear correlation of absolute accuracy difference and softmax difference, but there are also observations that does not support this relationship. Some SEU Injection results show high softmax difference, while still keeping the absolute accuracy difference low. 
+
+\subsubsection{Robustness of Deterministic CNN models vs Bayesian CNN Models}
+
+Based on Table \ref{table:robbothcompare}, it is observed that the deterministic CNN model is showing more robustness against SEU injection in absolute accuracy difference. It shows that the average absolute accuracy difference if a deterministic CNN model is attacked by SEU injection is 1.49\%, while the Bayesian CNN model is expected to have an absolute accuracy difference of 2.44\%. 
+
+This phenomenon can be triggered by the way that Bayesian Neural Network is sampling the weight/bias distribution parameter from the guide. In deterministic CNN model, the SEU only change one fixed weight/bias. In Bayesian CNN Model, as the distribution parameter is perturbed by the SEU, all Monte Carlo (MC) samples are drawn from the same perturbed distribution parameter. This makes every MC sample to be perturbed in the same way. This, will in turn disturb the average logits that is needed to classify the data with softmax. The resulting condition would be the data that is more prone to misclassification due to disturbed sampled weight and bias.
+
+On the other hand, in terms of average softmax difference, Bayesian CNN model can be seen to demonstrate a better robustness against SEU injection. Softmax difference, which indicates the change in the predicted class probability, is observed to be 0.2696 on the Deterministic CNN Model, and 0.1074 on the Bayesian CNN Model. This means that Bayesian CNN Model has a smaller shift in output probabilities compared to the Deterministic one. 
+
+The observed condition can happen due to how logits are calculated after MC sampling. As we run over the network 10 times, or as much as the number of samples is determined, logit shifts from the first run might be diluted by the subsequent run, as we are taking the average of all 10 runs to be the input of the softmax, that will classify our data. Although the chance of misclassifying some data sample is increased, Bayesian CNN model offer a more stable prediction probability against SEU.
+
+To conclude our comparison, we employ the Aggregate Robustness Measure (ARIn) defined in Equation (\ref{eq:ARIn}). Based on this metric, we find that \textbf{Bayesian Neural Network exhibits greater robustness than the Deterministic Neural Network}, as evidenced by its smaller ARIn value (0.0779 compared to 0.1909 for the latter). In the applications where class confidence or predictive probability constitutes a critical factor, the Bayesian CNN model is therefore more suitable to use compared to the deterministic CNN model. Some applications can include medical imaging (e.g. If the model uncertainty exceeds the threshold, the case is "rejected" or flagged for human evaluation \cite{10.3389/fninf.2024.1346723} ) and ensemble modeling (in which multiple models are combined to produce aggregate predictions \cite{bishopbarber98}). 
+
+
+\subsection{Robustness by model variation}
+
+%Summary of absolute accuracy difference and softmax difference by model variant for Deterministic and Bayesian CNN
+\begin{table}[h]
+\centering
+\begin{tabular}{l|rr|rr|rr}
+\toprule
+ & \multicolumn{2}{c|}{AAAD} & \multicolumn{2}{c|}{ASD} & \multicolumn{2}{c}{ARIn} \\
+ & DNN & BNN & DNN & BNN & DNN & BNN \\
+\midrule
+0 & \B{0}{.0145} & \B{0}{.0243} & \B{0}{.2694} & \B{0}{.1106} & \B{0}{.1908} & \B{0}{.0800} \\
+1 & \B{1}{.0142} & \B{0}{.0254} & \B{0}{.2699} & \B{0}{.1109} & \B{0}{.1911} & \B{0}{.0805} \\
+2 & \B{0}{.0157} & \B{1}{.0221} & \B{0}{.2702} & \B{1}{.0944} & \B{0}{.1914} & \B{1}{.0685} \\
+3 & \B{0}{.0152} & \B{0}{.0257} & \B{1}{.2687} & \B{0}{.1138} & \B{1}{.1903} & \B{0}{.0825} \\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Deterministic and Bayesian CNN model by model variant}
+\label{table:robbothmodelgran}
+\end{table}
+
+In Table \ref{table:robbothmodelgran}, each row represents model variations explained in Subsection \ref{subs:modelvar}.
+
+\subsubsection{Robustness of Deterministic CNN models}
+
+Table \ref{table:robbothmodelgran} summarizes these results by averaging the Absolute Accuracy Difference (AAAD) and Softmax Difference (ASD) across model variants. Based on the Aggregate Robustness Index (ARIn), \textbf{Model 3 (trained with weight decay) demonstrates the strongest robustness}. Although it exhibits slightly worse AAAD compared to the base model (Model 0), it achieves a noticeably lower ASD. This is consistent with the expectation that weight decay reduces the magnitude of the weights, leading to a smaller logits and hence smaller softmax differences.
+
+In comparison to prior work \cite{dennispoperobustcnn}, our findings diverge. While it suggests that a variant equivalent to our Model 2 achieved the best AAAD, our experiments indicate that Model 2 has the least robust AAAD, while Model 1 (with smartpooling) performs best in AAAD.
+
+\subsubsection{Robustness of Bayesian CNN models}
+
+As shown in Table \ref{table:robbothmodelgran}, \textbf{Model 2 (trained with dropout) is the most robust among the Bayesian variants}, exhibiting the lowest values for both AAAD and ASD. Although AAAD is generally similar across Bayesian variants, the reduced ASD of Model 2 makes its particularly notable. This outcome aligns with findings in \cite{dennispoperobustcnn}, despite differences in experimental setup.
+
+\subsubsection{On the robustness of Bayesian CNN model trained with dropout layer}
+
+The significant robustness of Model 2 compared to other model variants in the Bayesian setting can be attributed by the nature of Dropout layers that demonstrate redundancy during training. As some neurons are inactive during training, our neural network can not just too reliant on any single neuron to carry critical information/infer a feature. In our Bayesian CNN model without dropout layer, there might be a chance that a SEU/bitflips can hit a dominant neuron and shift our prediction significantly. With a regularized model with dropout, the resulting model has no dominant neuron, so during inference, other neurons are as contributing as others, resulting in less shift in prediction if one of the neurons is being hit by bitflip.
+
+\subsection{Robustness prior and prior parameter}
+
+%Summary of absolute accuracy difference and softmax difference by prior and prior parameter for Bayesian CNN
+\begin{table}[h]
+\centering
+\begin{tabular}{l|rr|rr|rr}
+\toprule
+ & \multicolumn{2}{c|}{AAAD} & \multicolumn{2}{c|}{ASD} & \multicolumn{2}{c}{ARIn} \\
+ & C & S & C & S & C & S \\
+\midrule
+G & \B{1}{.0177} & \B{0}{.0293} & \B{1}{.0794} & \B{0}{.1281} & \B{1}{.0575} & \B{0}{.0929} \\
+L & \B{0}{.0193} & \B{1}{.0287} & \B{0}{.0823} & \B{0}{.1306} & \B{0}{.0598} & \B{0}{.0946} \\
+U & \B{0}{.0231} & \B{0}{.0303} & \B{0}{.1054} & \B{1}{.1277} & \B{0}{.0763} & \B{1}{.0928} \\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Bayesian CNN model by prior and prior parameter}
+\label{table:robbaypriorpriorparam2}
+\end{table}
+
+In Table \ref{table:robbaypriorpriorparam2}, each row represents each prior distribution; which are Gaussian (G), Laplace (L), and Uniform (U). For each performance measure, we varied the SEU injection by the Center (C) and Scale (S) prior parameter.
+
+\subsubsection{Which prior is the most robust?}
+
+For the absolute accuracy difference, both Gaussian and Laplace prior have a similar result on the center and spread, with the Uniform distribution is the worst among all prior distributions. In terms of softmax difference, the Gaussian and Laplace distribution also performs similarly on the prior center and are both better compared to the Uniform distribution. A different observation can be found on the spread, which shows the Uniform and Gaussian perform similarly and better compared to the Laplace distribution. Overall, we can conclude that the \textbf{Gaussian prior is the most robust prior} among all, with Laplace prior shown a better accuracy robustness on prior spread attack, and the uniform distribution shown a better softmax robustness on prior spread attack.
+
+\subsubsection{Gaussian prior vs Laplace prior}
+
+%TODO explain why in general Gaussian is better
+
+%Each prior distribution have a different Probability Distribution Function (PDFs). The Gaussian distribution has lighter tails compared to the Laplace distribution with the same parameter. As we shift the mean for both distribution, we also pull the tail samples toward or accross the decision boundary. Because Laplace distribution have a heavier tail, the probability of tail samples to get sampled is higher, thus increasing the likelihood of prediction changes. The Uniform distribution is unsurprisingly doing worst, as the probability density of Uniform distribution is flat, making the samples evenly spread across the specified range. A shift in $a$ value for uniform distribution move a larger fraction of samples across the decision boundary, with the same probability of being sampled, making the prediction accuracy worse.
+
+%Laplace distribution is less affected in absolute accuracy difference if the spread parameter is being attacked compared to the Gaussian distribution, due to the fact that Gaussian distribution is more concentrated in the center. If we increase or do bitflip on the scale parameter for Gaussian distribution, the distribution of sample near the center widen and possibly move the sampled weight/bias across the decision boundary. For the Laplace distribution, modifying the scale parameter does not change the sampled value much, as the probability density of Laplace is already wide relative to the Gaussian prior. 
+
+Gaussian priors have lighter tails, making them more sensitive to mean or scale shifts that move samples across decision boundaries and increase prediction changes. Laplace priors, with heavier tails, are less affected by spread perturbations since their distributions are already wide, Uniform priors perform worse because their flat density causes any shift to affect many samples simultaneously, degrading accuracy.
+
+\subsubsection{Uniform prior robustness in softmax difference against the spread SEU injection}
+
+Since changing the scale parameter for the Gaussian and Laplace prior affect the peak height and decay rate in the tails, if we do Monte Carlo sampling for weight/bias sampling, the difference of sample values is expected to be higher compared to the Uniform prior that have a flat PDF. This is due to the fact that the high-density center is now less dense and mass shifts into the tails, which will amplify the variability in logits. The uniform distribution can yield a better softmax difference, due to the fact that the each value of weight/bias have a similar probability to be sampled. A slight change in Uniform's scale parameter, for a latent weight $x$, will result in a smaller change of probability, compared to the change for the same latent weight $x$ in Gaussian/Laplace prior.
+
+\subsubsection{On the robustness of prior center vs prior spread against SEU}
+
+%TODO add explanation. Why the center parameter is more robust than the spread
+
+Based on the Table \ref{table:robbaypriorpriorparam2} above, we can also retrieve a conclusion about how the SEU interacts with the center prior parameter and spread prior parameter. For all metrics, \textbf{the center prior parameter is consistently more robust than the spread prior parameter}. Robustness of Bayesian Neural Networks against SEU injection on the prior center parameter comes from the nature of shifting the mean of the prior that moves all the weight samples by the same absolute amount, preserving the relative positions and allowing them to cancel out during the Monte Carlo averaging. Shift in the spread parameter will change the weight sampled to be significantly different from the mean (either pushing some further into the tails or other closer to the center), making the resulting logits to be much different than before the SEU injection happened.
+
+\subsection{Robustness by activation function}
+
+%bayesian vs deterministic per metric
+\begin{table}[h]
+\centering
+\begin{tabular}{l|rr|rr|rr}
+\toprule
+& \multicolumn{2}{c|}{AAAD} & \multicolumn{2}{c|}{ASD} & \multicolumn{2}{c}{ARIn} \\
+ & DNN & BNN & DNN & BNN & DNN & BNN \\
+\midrule
+R & \B{1}{.0078} & \B{1}{.0168} & \B{0}{.2651} & \B{0}{.0958} & \B{0}{.1875} & \B{0}{.0688} \\
+W & \B{0}{.0178} & \B{0}{.0213} & \B{0}{.2716} & \B{0}{.0964} & \B{0}{.1924} & \B{0}{.0698} \\
+ru & \B{0}{.0234} & \B{0}{.0379} & \B{0}{.2835} & \B{0}{.1626} & \B{0}{.2012} & \B{0}{.1180} \\
+r6 & \B{0}{.0114} & \B{0}{.0248} & \B{0}{.2653} & \B{0}{.1012} & \B{0}{.1878} & \B{0}{.0737} \\
+sg & \B{0}{.0136} & \B{0}{.0190} & \B{1}{.2598} & \B{1}{.0800} & \B{1}{.1839} & \B{1}{.0581} \\
+sn & \B{0}{.0141} & \B{0}{.0294} & \B{0}{.2702} & \B{0}{.1056} & \B{0}{.1913} & \B{0}{.0775} \\
+th & \B{0}{.0163} & \B{0}{.0214} & \B{0}{.2714} & \B{0}{.1102} & \B{0}{.1923} & \B{0}{.0794} \\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Deterministic and Bayesian CNN model by activation function}
+\label{table:robbothact}
+\end{table}
+
+For Table \ref{table:robbothact}, we code each activation function as follows: RWG (R), WG (W), relu (ru), relu6 (r6), sigmoid (sg), sin (sn), tanh (th). We can observe that the Rectified Weighted Gaussian activation function has the most robust absolute accuracy difference among all activation function for the deterministic CNN model (which has been proven in \cite{dennispoperobustcnn}) and Bayesian CNN Model. On our newly introduced softmax difference measure, the sigmoid activation function achieves the lowest Average Softmax Difference (ASD) in both settings.
+
+%TODO why the RWG might be the best
+
+Relu, which is the most expressive activation function that we have in this experiment (as seen from Figure \ref{fig:activationfunctions}), shown a comparably better test accuracy despite showing the worst robustness. RWG, which yields the lowest test accuracy, achieves the strongest robustness, especially in terms of absolute accuracy difference. This observation shown us a symptom of a \textbf{trade-off between test accuracy and SEU robustness}, which is also observed in the work of \cite{carbone2020a}.
+
+It can also be seen from Table \ref{table:robbothact} that the sigmoid activation function have the second best robustness in absolute accuracy difference on BNNs, while also having the best softmax difference. SEU happens to weight and bias before activation function is implemented. Let's get back on how the neuron is calculated in the feed-forward process. This process, as mentioned in \cite{bishoppatternrecognition2007} is notated as:
+
+\begin{equation}
+\label{eq:neuronfeedforward}
+a_j = \sum_{i=1}^{D} w^{(1)}_{ji} x_i + w^{(1)}_{j0}
+\end{equation}
+
+%page 227
+where $x_1,x_2,\dots,x_D$ are inputs, $j=1,2,\dots,M$ and the superscript (1) represents the parameters in the first 'layer' of the network, which have a 'width' of $M$. $w^{(1)}_{j0}$ is  Each of $a_j$ is then transformed in the following equation:
+\begin{equation}
+z_j = h(a_j)
+\end{equation}
+where $h(\cdot)$ is a differentiable activation function.
+In order to understand how different activation function can yield different robustness, let's compare the sigmoid and tanh activation functions. Sigmoid has a smaller gradient $h'()$ near zero (0.25) than tanh (1), meaning that weight perturbations around this region result in a smaller output change. This explains the sigmoid's higher robustness under SEU injection.
+
+
+
+%$w^{(1)}_{ji}$ which represents weight, or $w^{(1)}_{j0}$ which represents bias, are the component in this feed-forward process that is prone to the SEU injection. As one of both values changed into SEU injected value $a'_j$, we would like to know how this change can effect the value of $z$ into $z'_j$, the lower the change, the difference in softmax value will be also lower.
+
+%In this experiment, the weight/bias is expected to be near zero with our setting of prior parameter $a=0$ and $b=1$. The majority of bitflips that we do will result in a change of weight/bias that is near zero, when we hit bit index that is not 0 (sign bit) and 1 (first exponent bit). Therefore, let's see the impact of changing $a$ to $z$ by observing the differential of our activation function $h'()$. We will take a look into sigmoid and the seemingly similarly shaped tanh, and its differential near 0.
+
+%$$
+%\sigma(z) = \frac{1}{1 + e^{-z}} ,\qquad\frac{d\sigma(z)}{dz} = \sigma(z)\big(1 - \sigma(z)\big) ,\qquad
+%$$
+%$$
+%\sigma(0) = 0.5 \quad \Rightarrow \quad %\sigma'(0) = 0.25
+%$$
+
+%$$
+%\tanh(z) = \frac{e^z - e^{-z}}{e^z + e^{-z}} ,\qquad \frac{d}{dz}\tanh(z) = 1 - \tanh^2(z) ,\qquad
+%$$
+
+%$$
+%\tanh(0) = 0 \quad \Rightarrow \quad 5\tanh'(0) = 1
+%$$
+
+%From our calculation of diferential for both activation functions above, we can see that the differential on sigmoid at 0 is 0.25, while the tanh is at 1. A slight change in input for tanh have a bigger shift in the value after activation function. Therefore, we can conclude that the sigmoid function gained robustness in SEU because of a smaller gradient near $z=0$. 
+
+%It will also be interesting to look at the gradient of our activation function on extreme values, especially in looking in the effect of SEU injection on bit index 1 (first exponent). \cite{bishoppatternrecognition2007} mentioned that the sigmoid decay asymptotically like $e^{-z}$ for $z \to +\infty$, while tanh, which has $tanh'(z) = 1- tanh^2(z)$, will decay in $4e^{-2z}$ for $z \to +\infty$, which is faster than the sigmoid. We can assume that the tanh function will dampen the $z$ value better on the extreme values.
+
+\subsection{Robustness by layer and layer parameter}
+
+%Summary of absolute accuracy difference and softmax difference by bit layer and module for Deterministic and Bayesian CNN
+\iffalse
+\begin{table}[H]
+\centering
+\begin{tabular}{ll|rr|rr|rr}
+\toprule
+ &  & \multicolumn{2}{c|}{AAAD} & \multicolumn{2}{c|}{ASD} & \multicolumn{2}{c}{ARIn} \\
+ &  & DNN & BNN & DNN & BNN & DNN & BNN \\
+\midrule
+conv1 & bias & \B{0}{.0048} & \B{0}{.0095} & \B{0}{.2651} & \B{1}{.0641} & \B{0}{.1875} & \B{1}{.0458} \\
+conv1 & weight & \B{0}{.0070} & \B{0}{.0129} & \B{0}{.2696} & \B{0}{.0762} & \B{0}{.1907} & \B{0}{.0546} \\
+\midrule
+conv2 & bias & \B{1}{.0021} & \B{1}{.0089} & \B{1}{.2622} & \B{0}{.0723} & \B{1}{.1854} & \B{0}{.0515} \\
+conv2 & weight & \B{0}{.0058} & \B{0}{.0136} & \B{0}{.2640} & \B{0}{.0987} & \B{0}{.1868} & \B{0}{.0704} \\
+\midrule
+fc1 & bias & \B{0}{.0326} & \B{0}{.0459} & \B{0}{.2773} & \B{0}{.1720} & \B{0}{.1974} & \B{0}{.1259} \\
+fc1 & weight & \B{0}{.0372} & \B{0}{.0555} & \B{0}{.2792} & \B{0}{.1611} & \B{0}{.1991} & \B{0}{.1205} \\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Deterministic and Bayesian CNN model by layer and layer parameter}
+\label{table:robbothlayermodule}
+\end{table}
+\fi
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll|rr|rr}
+\toprule
+ &  & \multicolumn{2}{c|}{AAAD} & \multicolumn{2}{c}{ASD} \\
+ &  & DNN & BNN & DNN & BNN \\
+\midrule
+conv1 & bias & \B{0}{.0048} & \B{0}{.0095} & \B{0}{.2651} & \B{1}{.0641}  \\
+conv1 & weight & \B{0}{.0070} & \B{0}{.0129} & \B{0}{.2696} & \B{0}{.0762} \\
+\midrule
+conv2 & bias & \B{1}{.0021} & \B{1}{.0089} & \B{1}{.2622} & \B{0}{.0723} \\
+conv2 & weight & \B{0}{.0058} & \B{0}{.0136} & \B{0}{.2640} & \B{0}{.0987} \\
+\midrule
+fc1 & bias & \B{0}{.0326} & \B{0}{.0459} & \B{0}{.2773} & \B{0}{.1720} \\
+fc1 & weight & \B{0}{.0372} & \B{0}{.0555} & \B{0}{.2792} & \B{0}{.1611} \\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Deterministic and Bayesian CNN model by layer and layer parameter (AAAD \& ASD)}
+\label{table:robbothlayermodule}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll|rr}
+\toprule
+ & & \multicolumn{2}{c}{ARIn} \\
+ &  & DNN & BNN \\
+\midrule
+conv1 & bias & \B{0}{.1875} & \B{1}{.0458} \\
+conv1 & weight &  \B{0}{.1907} & \B{0}{.0546} \\
+\midrule
+conv2 & bias & \B{1}{.1854} & \B{0}{.0515} \\
+conv2 & weight & \B{0}{.1868} & \B{0}{.0704} \\
+\midrule
+fc1 & bias & \B{0}{.1974} & \B{0}{.1259} \\
+fc1 & weight & \B{0}{.1991} & \B{0}{.1205} \\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Deterministic and Bayesian CNN model by layer and layer parameter (ARIn)}
+\label{table:robbothlayermodule}
+\end{table}
+    %\end{minipage}
+    %\caption{Robustness of Deterministic and Bayesian CNN model by attacked bit location}
+    %\label{fig:robbothbitlocbig}
+
+
+Table \ref{table:robbothlayermodule} summarizes the SEU Injection result by averaging the value of Absolute Accuracy Difference and Softmax Difference across layers and layer parameters of the CNN architecture. Based on that table, it is observed that convolutional layer 2 is the most robust, followed by convolutional layer 1. The fully connected layer is the least robust, as it exhibits the highest mean of softmax difference and the highest mean absolute accuracy difference. These findings also align with the result shown in \cite{dennispoperobustcnn}, where the further convolutional layer (conv2 and conv3) have the lowest average test delta and the fully connected layer has the highest.
+
+\subsubsection {Layer SEU Robustness, propagation depth}
+
+%TODO explain how error propagates through the layers. Error in early layers are likely to be 'dampened' by the activation function etc. Error on the far end of the layer will not be dampened well and captured by the prediction layer.
+
+%Fully connected layer, which is the furthest layer we have in our architecture, is the least robust due to how the SEU injection impacts the final logits. If we do the SEU injection early in the convolutional 1 layers, there are multiple occassion that nonlinear process will dampen the effect of SEU. 
+
+%First, every convolution layer will be followed by an activation function. Nonlinear activation function can help reduce the impact of SEU or bitflips. After the activation function, the result is taken into pooling layer, in which the multiple values can are aggregate into a smaller dimension. If the pooling layer is utilizing the average pooling layer, the value of the SEU will be averaged with other values, reducing the impact. In our case study, we are using max pooling. The value of the SEU might just be propagated to the next layer if the resulting value is the highest among all. Therefore, as the work in \cite{dennispoperobustcnn} suggested, smart pooling is used, to remove values that are above specified threshold, especially if the value was hit by SEU.
+
+%Let's compare this condition with fully connected layer from our model architecture. In this layer, the SEU injected values will not undergo any non-linear transformation like what we had in the convolutional layers. Therefore, this value will directly impact the calculation of logits and class probability, thus explaining the higher absolute accuracy difference and softmax difference.
+
+
+%%The illustration on how SEU injection effects can propagate through the network and its impact is shown in Figure \ref{fig:errorpropillust}. An SEU injected in early convolutional layers, as shown in Figure \ref{fig:errorpropillust} (a) is symbolized as red lightning to show its devastating impact. The subsequent impact is marked yellow to show that SEU effect is weakened, followed by small green lightning on the FC1 layer, showing that the impact of SEU is further diminished. The sinusoidal wave in the neuron is intended to show that the attack undergo non-linear transformation, dampening the impact of the SEU injected value. The colored cloud at the end of the network represents the impact of SEU on the logits, with red means that the logits is impacted the worst (as shown in Figure \ref{fig:errorpropillust} (b)), and green is the least.
+
+%Figure \ref{fig:errorpropillust} illustrates how the effects of an SEU injection propagate through a CNN model. In panel (a), an SEU injected into an early convolutional layer (indicated by the red lightning bolt) undergoes attenuation as it passes through subsequent layers. This weakening is shown by yellow and then smaller green lightning symbols in later layers, reflecting the diminishing influence of the fault. The sinusoidal symbols within the neurons represent non-linear transformations, which further dampen the perturbation. Consequently, the effect on the final logits is minimal, represented by the green cloud at the output.
+
+%In contrast, panel (b) shows an SEU injected directly into the fully connected (FC1) layer. Here, the perturbation is not mitigated by earlier non-linear transformations and instead propagates strongly to the output layer, producing the most severe distortion in the logits, indicated by the red clouds.
+
+The fully connected layer is the least robust because SEU injections directly affect the final logits without any subsequent non-linear transformations, resulting in the highest AAAD and ASD. In contrast, faults injected in earlier convolutional layers are partially mitigated by activation and pooling operations, which dampen or average out perturbations before they reach the output. As illustrated in Figure \ref{fig:errorpropillust}, early-layer faults weaken as they propagate through the network, whereas faults at the fully connected layer propagate directly to the output, causing the most severe distortions.
+
+\subsubsection{Layer component SEU Robustness, weight vs bias}
+
+Based on the result of our experiment, we can see that the weight is less robust compared to the bias, when we inject them with SEU/biftlips. This is due to the nature of the neural networks itself. Looking back at Equation (\ref{eq:neuronfeedforward}), we can see that the weight is multiplied by the input value $x_i$ to compute $a_j$. \textbf{Change in weight to the value of $a_j$ is amplified by the $x_i$}, compared to the change in bias that is merely a constant.
+
+
+
+\begin{figure}[h]
+\caption{Illustration of SEU injection and its propagated effect on conv1 layer (a) and fc1 layer (b) in a CNN model}
+\includegraphics[scale=0.45]{images/error-propagation-illustration-stacked.png}
+\centering
+\label{fig:errorpropillust}
+\end{figure}
+
+\subsection{Robustness by attacked bit location} \label{robattackedbit}
+
+%Summary of absolute accuracy difference and softmax difference by bit location for Deterministic and Bayesian CNN
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l|rr|rr}
+\toprule
+ & \multicolumn{2}{c|}{ALAD} & \multicolumn{2}{c}{ARIn}\\
+ & DNN & BNN & DNN & BNN\\
+\midrule
+0 & \B{0}{-1.1804} & \B{0}{-0.7909}& \B{0}{.1848} & \B{0}{.0381}\\
+\midrule
+1 & \B{0}{37.0504} & \B{0}{37.8829}&\B{0}{.2371} & \B{0}{.3009}\\
+3 & \B{0}{-1.4815} & \B{0}{-0.6454}& \B{1}{.1847} & \B{0}{.0376}\\
+6 & \B{0}{-0.5849} & \B{0}{-0.4291} & \B{0}{.1850} & \B{0}{.0378}\\
+\midrule
+10 & \B{0}{-2.2308} & \B{0}{-1.3945}& \B{1}{.1847} & \B{1}{.0374}\\
+15 & \B{0}{-3.7360} & \B{0}{-2.8997}& \B{1}{.1847} & \B{1}{.0374}\\
+21 & \B{1}{-5.5422} & \B{1}{-4.7058}& \B{1}{.1847} & \B{0}{.0376}\\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Deterministic and Bayesian CNN model by attacked bit location (ALAD \& ARIn)}
+\label{table:robbothbitlocaladonly}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l|rr|rr}
+\toprule
+  & \multicolumn{2}{c|}{AAAD} & \multicolumn{2}{c}{ASD}  \\
+  & DNN & BNN & DNN & BNN \\
+\midrule
+0 &  \B{0}{.0005} & \B{0}{.0075} & \B{0}{.2613} & \B{0}{.0533} \\
+\midrule
+1 & \B{0}{.1023} & \B{0}{.1206} & \B{0}{.3193} & \B{0}{.4080} \\
+3 & \B{0}{.0002} & \B{0}{.0070} & \B{0}{.2612} & \B{0}{.0527}  \\
+6 & \B{0}{.0013} & \B{0}{.0070} & \B{0}{.2617} & \B{0}{.0529} \\
+\midrule
+10 & \B{0}{.0001} & \B{1}{.0067} & \B{1}{.2611} & \B{1}{.0525} \\
+15 & \B{1}{.0000} & \B{1}{.0067} & \B{1}{.2611} & \B{1}{.0525} \\
+21 & \B{1}{.0000} & \B{1}{.0067} & \B{1}{.2611} & \B{0}{.0528} \\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Deterministic and Bayesian CNN model by attacked bit location (AAAD \& ASD)}
+\label{table:robbothbitloc}
+\end{table}
+
+To analyze the effect of SEU injections at different bit positions, we compute the log absolute difference of values before and after an SEU, defined as:
+\begin{multline}
+\text{Log Absolute Difference} = \\ \log_{10}(|\text{value after SEU}-\text{value before SEU}|)
+\end{multline}
+
+%Attacked bit index in this experiment are sign (index 0), exponent (index 1,3,6), and mantissa (index 10, 15, 21). Based on Table \ref{table:robbothbitloc}, the average log absolute difference of attack against bit index 1 is around 37, which is is the worst among all SEU injection bit index. We can see that bit index 1 is the significantly least robust in terms of AAAD, ASD, which consequently shows the worst ARIn. 
+
+In this experiment, the attacked bit index in this experiment are sign (index 0), exponent (index 1,3,6), and mantissa (index 10, 15, 21). As shown in Table \ref{table:robbothbitloc}, flipping bit index 1 yields an average log absolute difference of approximately 37 and results in the worst robustness across all metrics (AAAD, ASD, and ARIn). By contrast, perturbations to the mantissa bits have negligible impact on AAAD. Attacks on bit index 6 yield slightly higher AAAD than the mantissa bits, through still minor compared to bit index 1.
+
+%It is observed that the attack on mantissa have almost no effect on the observed absolute accuracy difference, with the value of absolute accuracy difference observed is almost 0. Bit index 3 also observed to have a similar impact on both absolute accuracy difference and softmax difference, compared with the mantissa bits. 
+
+
+
+%By contrast, perturbations to the mantissa bits have negligible impact on AAAD, with values close to zero, and produce robustness metrics nearly identical to those from bit index 3 in the exponent. Attacks on bit index 6 also yield slightly higher AAAD than the mantissa bits, through still minor compared to bit index 1.
+
+%Based on Table \ref{table:robbothbitloc}, which is summarized in Figure \ref{fig:logabsdiff2}, we can see that a correlation between log absolute difference with average absolute accuracy difference and average softmax difference cannot be established. SEU in bit index 3 and 6 yield higher average accuracy difference compared to other bit index, excluding bit index 1. It is also observed that attack in bit index 0 results in a higher average softmax difference.
+
+Notably, no clear correlation can be established between the log absolute difference and robustness metrics such as AAAD or ASD. Bit index 0 produces a moderate log absolute difference yet yields slightly higher ASD compared to mantissa flips. 
+
+%Overall, these results confirm that SEUs affecting the exponent, particularly at bit index 1, are the most harmful to model robustness.
+
+\subsection{Robustness by original bit value}
+
+%Summary of absolute accuracy difference and softmax difference by original bit condition for Deterministic and Bayesian CNN
+\begin{table}[H]
+\centering
+\begin{tabular}{l|rr|rr|rr}
+\toprule
+ & \multicolumn{2}{c|}{AAAD} & \multicolumn{2}{c|}{ASD} & \multicolumn{2}{c}{ARIn} \\
+ & DNN & BNN & DNN & BNN & DNN & BNN \\
+\midrule
+0 & \B{0}{.0275} & \B{0}{.0455} & \B{0}{.2767} & \B{0}{.1734} & \B{0}{.1966} & \B{0}{.1268} \\
+1 & \B{1}{.0002} & \B{1}{.0069} & \B{1}{.2612} & \B{1}{.0529} & \B{1}{.1847} & \B{1}{.0378} \\
+\bottomrule
+\end{tabular}
+\caption{Robustness of Deterministic and Bayesian CNN model by original bit attacked}
+\label{table:robbothorbit}
+\end{table}
+
+In this subsection, we also compare how the robustness is affected by the original bit value/state before the SEU. Table \ref{table:robbothorbit} shows that bitflip from 1 to 0 exhibits an extremely more robust model compared to bitflip from 0 to 1, especially on the absolute accuracy difference. It's not aligned with the claim from \cite{Hanif2021} that stated the opposite. 
+
+This difference can be explained by the distribution of weights and biases in our models, which are typically close to 0 or 1. Consequently, the original bit value/state play an important role in determining the impact of SEUs. After a thorough observation, we saw that in all SEU injections involving bit index 1, the original bit value/state was always 0. 
+
+%Since Subsection \ref{robattackedbit} already established that bit index 1 is highly vulnerable to SEUs, the observed lack of robustness in bitflip from 0 to 1 are consistent with these findings.

@@ -1,0 +1,2627 @@
+<title>EuroSAT SEU Robustness — Bayesian CNN grid</title>
+<style>
+:root{
+  --paper:#F4F6F5; --surface:#FFFFFF; --surface-2:#EDF1EF;
+  --ink:#131A18; --ink-2:#46534F; --ink-3:#7A8783;
+  --rule:#DBE3E0; --rule-strong:#B9C6C2;
+  --accent:#0C6B60; --accent-ink:#0A554C; --accent-wash:rgba(12,107,96,.13);
+  --critical:#A83A2B; --critical-wash:rgba(168,58,43,.11);
+  --shadow:0 1px 2px rgba(19,26,24,.06), 0 8px 24px -18px rgba(19,26,24,.30);
+  --display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1413; --surface:#151D1B; --surface-2:#1B2523;
+    --ink:#E7EDEA; --ink-2:#A8B5B1; --ink-3:#77847F;
+    --rule:#25322F; --rule-strong:#3A4A46;
+    --accent:#4FBFAE; --accent-ink:#77D3C4; --accent-wash:rgba(79,191,174,.16);
+    --critical:#E08573; --critical-wash:rgba(224,133,115,.14);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1413; --surface:#151D1B; --surface-2:#1B2523;
+  --ink:#E7EDEA; --ink-2:#A8B5B1; --ink-3:#77847F;
+  --rule:#25322F; --rule-strong:#3A4A46;
+  --accent:#4FBFAE; --accent-ink:#77D3C4; --accent-wash:rgba(79,191,174,.16);
+  --critical:#E08573; --critical-wash:rgba(224,133,115,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:64rem; margin:0 auto; padding:0 1.5rem 6rem}
+
+/* ---------- masthead ---------- */
+.masthead{padding:3.5rem 0 1.75rem; border-bottom:1px solid var(--rule-strong)}
+.eyebrow{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent-ink); margin:0 0 1rem;
+}
+h1{
+  font-family:var(--display); font-weight:600; font-size:clamp(2rem,5vw,3rem);
+  line-height:1.1; letter-spacing:-.015em; margin:0 0 .75rem; text-wrap:balance;
+}
+.standfirst{
+  font-size:1.06rem; color:var(--ink-2); max-width:56ch; margin:0 0 1.5rem;
+}
+.provenance{
+  display:flex; flex-wrap:wrap; gap:.4rem 1.5rem;
+  font-family:var(--mono); font-size:.75rem; color:var(--ink-3);
+}
+.provenance b{color:var(--ink-2); font-weight:600}
+
+/* ---------- slice control ---------- */
+.toolbar{
+  position:sticky; top:0; z-index:20; background:var(--paper);
+  border-bottom:1px solid var(--rule); padding:.75rem 0;
+  display:flex; flex-wrap:wrap; align-items:center; gap:.75rem 1.25rem;
+}
+.toolbar-label{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3);
+}
+.seg{display:flex; border:1px solid var(--rule-strong); border-radius:2px; overflow:hidden}
+.seg button{
+  font:inherit; font-family:var(--mono); font-size:.8rem;
+  padding:.34rem .8rem; border:0; border-right:1px solid var(--rule-strong);
+  background:var(--surface); color:var(--ink-2); cursor:pointer;
+}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--surface-2); color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--paper)}
+.seg button:focus-visible{outline:2px solid var(--accent-ink); outline-offset:-2px}
+.slice-note{font-size:.82rem; color:var(--ink-3); margin-left:auto}
+
+/* ---------- stat strip ---------- */
+.stats{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule);
+  margin:2rem 0 3rem; box-shadow:var(--shadow);
+}
+.stat{background:var(--surface); padding:1.1rem 1.15rem}
+.stat.hero{background:var(--surface)}
+.stat dt{
+  font-family:var(--mono); font-size:.68rem; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 .45rem;
+}
+.stat dd{
+  margin:0; font-family:var(--display); font-size:1.9rem; line-height:1;
+  font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+}
+.stat.hero dd{color:var(--accent-ink); font-size:2.3rem}
+.stat small{display:block; margin-top:.4rem; font-size:.74rem; color:var(--ink-3); font-family:var(--body)}
+
+/* ---------- sections ---------- */
+section{margin:0 0 3.25rem; scroll-margin-top:4rem}
+.sec-head{display:flex; align-items:baseline; gap:.75rem; margin:0 0 .3rem}
+.sec-num{
+  font-family:var(--mono); font-size:.75rem; color:var(--accent-ink);
+  letter-spacing:.08em; padding-top:.2rem;
+}
+h2{
+  font-family:var(--display); font-weight:600; font-size:1.5rem;
+  letter-spacing:-.01em; margin:0; text-wrap:balance;
+}
+.sec-note{color:var(--ink-2); font-size:.93rem; margin:.35rem 0 1.1rem; max-width:62ch}
+
+/* ---------- tables ---------- */
+.tablewrap{
+  overflow-x:auto; border:1px solid var(--rule); background:var(--surface);
+  box-shadow:var(--shadow);
+}
+table{border-collapse:collapse; width:100%; min-width:44rem; font-size:.9rem}
+caption{
+  caption-side:top; text-align:left; padding:.7rem .95rem;
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-3);
+  border-bottom:1px solid var(--rule);
+}
+th,td{padding:.55rem .95rem; text-align:right; border-bottom:1px solid var(--rule)}
+thead th{
+  font-family:var(--mono); font-weight:500; font-size:.72rem; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-3); white-space:nowrap;
+  border-bottom:1px solid var(--rule-strong);
+}
+th[scope="row"],thead th:first-child,td:first-child{text-align:left}
+th[scope="row"]{font-weight:500; white-space:nowrap}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:.85rem}
+.dim{color:var(--ink-3)}
+td.meter{min-width:11rem}
+.meterbox{display:flex; align-items:center; gap:.6rem; justify-content:flex-end}
+.track{
+  flex:1; height:8px; background:var(--accent-wash); border-radius:0 4px 4px 0;
+  max-width:7rem; overflow:hidden;
+}
+.track i{display:block; height:100%; background:var(--accent); border-radius:0 4px 4px 0}
+tr.flag .track i{background:var(--critical)}
+tr.flag .track{background:var(--critical-wash)}
+tr.flag th[scope="row"]{color:var(--critical)}
+.chip{
+  display:inline-block; margin-left:.5rem; padding:.05rem .4rem;
+  font-family:var(--mono); font-size:.64rem; letter-spacing:.06em;
+  text-transform:uppercase; border:1px solid currentColor; border-radius:2px;
+  color:var(--accent-ink); vertical-align:.08em;
+}
+.chip.warn{color:var(--critical)}
+.foot{
+  font-size:.8rem; color:var(--ink-3); margin:.6rem 0 0; max-width:62ch;
+}
+
+/* ---------- notes ---------- */
+.notes{border-top:1px solid var(--rule-strong); padding-top:1.75rem}
+.notes ol{padding-left:1.1rem; margin:0; display:flex; flex-direction:column; gap:.8rem}
+.notes li{color:var(--ink-2); font-size:.92rem; max-width:64ch}
+.notes b{color:var(--ink)}
+code{
+  font-family:var(--mono); font-size:.86em; background:var(--surface-2);
+  padding:.08rem .3rem; border-radius:2px; color:var(--ink-2);
+}
+.formula{
+  font-family:var(--mono); font-size:.82rem; color:var(--ink-2);
+  background:var(--surface); border-left:2px solid var(--accent);
+  padding:.7rem .95rem; margin:1.25rem 0 0; overflow-x:auto;
+}
+@media (max-width:640px){
+  .masthead{padding-top:2.25rem}
+  .slice-note{margin-left:0; flex-basis:100%}
+}
+@media (prefers-reduced-motion:no-preference){
+  .track i{transition:width .35s ease}
+}
+</style>
+
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">Single-event upsets · Bayesian CNN · EuroSAT 10-class</p>
+  <h1>Bit-flip robustness across the full EuroSAT variational grid</h1>
+  <p class="standfirst">Every FP32 single-bit fault injected into 252 trained Bayesian CNNs, reduced to the
+  three robustness measures used in the paper. Deduplicated source: <code>seu_clean</code>.</p>
+  <div class="provenance">
+    <span><b>252</b> model configs</span>
+    <span><b>42,336</b> injections</span>
+    <span><b>39,312</b> valid</span>
+    <span><b>3,024</b> degenerate, excluded</span>
+    <span>results/eurosat/seu_clean</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="toolbar-label">Prior scale</span>
+  <div class="seg" role="group" aria-label="Prior scale slice">
+    <button type="button" data-slice="b0.1">b = 0.1</button>
+    <button type="button" data-slice="b1" aria-pressed="true">b = 1.0</button>
+    <button type="button" data-slice="b10">b = 10</button>
+    <button type="button" data-slice="all">all b pooled</button>
+  </div>
+  <span class="slice-note" id="sliceNote"></span>
+</div>
+
+<dl class="stats" id="stats"></dl>
+
+<section id="variant">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Model variant</h2></div>
+  <p class="sec-note">The four architectural variants: base, spike-suppressing SmartPool, dropout
+  (p = 0.5), and weight decay (λ = 1e-4). Each row averages over all activations and priors in the slice.</p>
+  <div class="tablewrap"><table data-table="variant" data-caption="Robustness by model variant"></table></div>
+  <p class="foot">The variant spread is far narrower than the run-to-run noise floor documented in
+  <code>docs/analysis/seu_metric_noise_floor.md</code> — read the ordering as indistinguishable, not as a ranking.</p>
+</section>
+
+<section id="prior">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Prior distribution</h2></div>
+  <p class="sec-note">Gaussian and Laplace priors expose a location and a scale parameter; the uniform
+  prior exposes a low bound and a width. Both parameterisations are injected.</p>
+  <div class="tablewrap"><table data-table="prior" data-caption="Robustness by prior family"></table></div>
+</section>
+
+<section id="param">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Centre vs. spread parameters</h2></div>
+  <p class="sec-note">Which half of the variational parameter is hit. <code>locs</code>/<code>lows</code>
+  are centre parameters; <code>scales</code>/<code>widths</code> are spread parameters. A flip that drives a
+  spread parameter negative is undefined and is excluded from every statistic on this page.</p>
+  <div class="tablewrap"><table data-table="param_type" data-caption="Robustness by variational parameter"></table></div>
+</section>
+
+<section id="activation">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Activation function</h2></div>
+  <p class="sec-note">Seven activations, including the two weighted-Gaussian variants (WG, RWG) whose
+  bounded response is the reason they were introduced.</p>
+  <div class="tablewrap"><table data-table="activation" data-caption="Robustness by activation function"></table></div>
+</section>
+
+<section id="site">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Injection site</h2></div>
+  <p class="sec-note">Where in the network the upset lands — by layer, and by layer × parameter kind.</p>
+  <div class="tablewrap"><table data-table="layer" data-caption="Robustness by layer"></table></div>
+  <div class="tablewrap" style="margin-top:1.25rem"><table data-table="layer_module" data-caption="Robustness by layer and weight/bias"></table></div>
+</section>
+
+<section id="bit">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Bit position</h2></div>
+  <p class="sec-note">IEEE-754 FP32 layout: bit 0 is the sign, bits 1–8 the exponent, bits 9–31 the
+  mantissa. Bit 1 is the exponent MSB.</p>
+  <div class="tablewrap"><table data-table="bit" data-caption="Robustness by flipped bit index"></table></div>
+  <p class="foot">Bit 0 has half the sample count of the other positions: a sign flip on a spread
+  parameter is always degenerate, so those rows are excluded.</p>
+</section>
+
+<section id="origbit">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Original bit value</h2></div>
+  <p class="sec-note">Whether the upset raised a 0 to a 1 or cleared a 1 to a 0.</p>
+  <div class="tablewrap"><table data-table="orig_bit" data-caption="Robustness by pre-flip bit value"></table></div>
+</section>
+
+<section id="scale">
+  <div class="sec-head"><span class="sec-num">08</span><h2>Prior scale</h2></div>
+  <p class="sec-note">Cross-slice comparison — this table always pools every variant, prior and
+  activation at each value of <code>b</code>, and does not respond to the selector above.</p>
+  <div class="tablewrap"><table data-table="prior_b" data-caption="Robustness by prior scale b (all configs)"></table></div>
+</section>
+
+<section class="notes">
+  <div class="sec-head"><span class="sec-num">·</span><h2>How to read these numbers</h2></div>
+  <div class="formula">AAAD = mean |acc_after − acc_before| &nbsp;·&nbsp; ASD = mean softmax difference &nbsp;·&nbsp; ARIn = √((AAAD² + ASD²) / 2)</div>
+  <ol style="margin-top:1.25rem">
+    <li><b>ARIn is computed from the aggregated means</b>, matching the paper, not averaged row-wise.
+    The two differ; row-wise ARIn runs higher.</li>
+    <li><b>b = 1.0 is the primary slice.</b> It is the grid that matches the paper's single-scale BNN
+    sweep, and recomputing ShipsNet fold-1 at b = 1.0 reproduces the paper's Table 3 BNN row exactly.
+    The other slices are a sensitivity check.</li>
+    <li><b>3,024 injections are degenerate</b> — a bit flip that makes a scale or width negative has no
+    defined posterior. They are excluded from all means and counted separately, never silently dropped.</li>
+    <li><b>One run per config, unseeded MC-10 inference.</b> Run-to-run variance is unquantified;
+    treat aggregate differences below ≈0.005 ARIn as noise.</li>
+    <li><b>No deterministic-CNN baseline exists for EuroSAT.</b> Every BNN-vs-DNN claim in the paper is
+    untestable on this dataset — nothing here confirms or refutes it.</li>
+    <li><b>Initial accuracy is the best-checkpoint MC-10 accuracy</b> read from the SEU CSVs, not the
+    last-epoch test accuracy in the training logs.</li>
+  </ol>
+</section>
+</div>
+
+<script id="seuData" type="application/json">{
+ "meta": {
+  "source": "results/eurosat/seu_clean/{v02_00..v02_03}",
+  "n_files": 252,
+  "n_rows": 42336,
+  "b_values": [
+   "0.1",
+   "1",
+   "10"
+  ]
+ },
+ "slices": {
+  "all": {
+   "overall": {
+    "aaad": 0.041658,
+    "asd": 0.126862,
+    "arin": 0.094418,
+    "init_acc": 0.756433,
+    "n": 39312,
+    "n_excluded": 3024,
+    "n_configs": 252
+   },
+   "variant": [
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "aaad": 0.042155,
+     "asd": 0.126666,
+     "arin": 0.094396,
+     "init_acc": 0.761764,
+     "n": 9828,
+     "n_excluded": 756
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "aaad": 0.042644,
+     "asd": 0.127211,
+     "arin": 0.094871,
+     "init_acc": 0.760412,
+     "n": 9828,
+     "n_excluded": 756
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "aaad": 0.040619,
+     "asd": 0.126261,
+     "arin": 0.093786,
+     "init_acc": 0.740294,
+     "n": 9828,
+     "n_excluded": 756
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "aaad": 0.041214,
+     "asd": 0.127312,
+     "arin": 0.094623,
+     "init_acc": 0.763265,
+     "n": 9828,
+     "n_excluded": 756
+    }
+   ],
+   "prior": [
+    {
+     "prior": "gaussian",
+     "aaad": 0.042376,
+     "asd": 0.131973,
+     "arin": 0.098012,
+     "init_acc": 0.792994,
+     "n": 13104,
+     "n_excluded": 1008
+    },
+    {
+     "prior": "laplace",
+     "aaad": 0.042666,
+     "asd": 0.143927,
+     "arin": 0.10615,
+     "init_acc": 0.782912,
+     "n": 13104,
+     "n_excluded": 1008
+    },
+    {
+     "prior": "uniform",
+     "aaad": 0.039932,
+     "asd": 0.104687,
+     "arin": 0.079227,
+     "init_acc": 0.693395,
+     "n": 13104,
+     "n_excluded": 1008
+    }
+   ],
+   "activation": [
+    {
+     "activation_fn": "_actRWG",
+     "aaad": 0.028191,
+     "asd": 0.095857,
+     "arin": 0.070652,
+     "init_acc": 0.787047,
+     "n": 5616,
+     "n_excluded": 432
+    },
+    {
+     "activation_fn": "_actWG",
+     "aaad": 0.024653,
+     "asd": 0.093984,
+     "arin": 0.068705,
+     "init_acc": 0.81249,
+     "n": 5616,
+     "n_excluded": 432
+    },
+    {
+     "activation_fn": "relu",
+     "aaad": 0.071237,
+     "asd": 0.165814,
+     "arin": 0.127611,
+     "init_acc": 0.742325,
+     "n": 5616,
+     "n_excluded": 432
+    },
+    {
+     "activation_fn": "relu6",
+     "aaad": 0.061195,
+     "asd": 0.150602,
+     "arin": 0.114947,
+     "init_acc": 0.740405,
+     "n": 5616,
+     "n_excluded": 432
+    },
+    {
+     "activation_fn": "sigmoid",
+     "aaad": 0.04338,
+     "asd": 0.154182,
+     "arin": 0.113256,
+     "init_acc": 0.637387,
+     "n": 5616,
+     "n_excluded": 432
+    },
+    {
+     "activation_fn": "sin",
+     "aaad": 0.030622,
+     "asd": 0.109302,
+     "arin": 0.080264,
+     "init_acc": 0.793616,
+     "n": 5616,
+     "n_excluded": 432
+    },
+    {
+     "activation_fn": "tanh",
+     "aaad": 0.032329,
+     "asd": 0.118295,
+     "arin": 0.086715,
+     "init_acc": 0.781764,
+     "n": 5616,
+     "n_excluded": 432
+    }
+   ],
+   "param_type": [
+    {
+     "param_type": "locs",
+     "aaad": 0.039891,
+     "asd": 0.136192,
+     "arin": 0.100348,
+     "init_acc": 0.787953,
+     "n": 14112,
+     "n_excluded": 0
+    },
+    {
+     "param_type": "lows",
+     "aaad": 0.030824,
+     "asd": 0.094038,
+     "arin": 0.069976,
+     "init_acc": 0.693395,
+     "n": 7056,
+     "n_excluded": 0
+    },
+    {
+     "param_type": "scales",
+     "aaad": 0.04559,
+     "asd": 0.140002,
+     "arin": 0.104113,
+     "init_acc": 0.787953,
+     "n": 12096,
+     "n_excluded": 2016
+    },
+    {
+     "param_type": "widths",
+     "aaad": 0.050558,
+     "asd": 0.11711,
+     "arin": 0.090196,
+     "init_acc": 0.693395,
+     "n": 6048,
+     "n_excluded": 1008
+    }
+   ],
+   "layer": [
+    {
+     "location_layer": "conv1",
+     "aaad": 0.034098,
+     "asd": 0.115811,
+     "arin": 0.085367,
+     "init_acc": 0.756428,
+     "n": 13104,
+     "n_excluded": 1008
+    },
+    {
+     "location_layer": "conv2",
+     "aaad": 0.026528,
+     "asd": 0.103736,
+     "arin": 0.075713,
+     "init_acc": 0.756428,
+     "n": 13104,
+     "n_excluded": 1008
+    },
+    {
+     "location_layer": "fc1",
+     "aaad": 0.064348,
+     "asd": 0.16104,
+     "arin": 0.122626,
+     "init_acc": 0.756445,
+     "n": 13104,
+     "n_excluded": 1008
+    }
+   ],
+   "layer_module": [
+    {
+     "location_layer": "conv1",
+     "location_module": "bias",
+     "aaad": 0.031162,
+     "asd": 0.112111,
+     "arin": 0.08228,
+     "init_acc": 0.756428,
+     "n": 6552,
+     "n_excluded": 504
+    },
+    {
+     "location_layer": "conv1",
+     "location_module": "weight",
+     "aaad": 0.037034,
+     "asd": 0.119512,
+     "arin": 0.088472,
+     "init_acc": 0.756428,
+     "n": 6552,
+     "n_excluded": 504
+    },
+    {
+     "location_layer": "conv2",
+     "location_module": "bias",
+     "aaad": 0.029282,
+     "asd": 0.107863,
+     "arin": 0.079032,
+     "init_acc": 0.756428,
+     "n": 6552,
+     "n_excluded": 504
+    },
+    {
+     "location_layer": "conv2",
+     "location_module": "weight",
+     "aaad": 0.023774,
+     "asd": 0.099608,
+     "arin": 0.072412,
+     "init_acc": 0.756428,
+     "n": 6552,
+     "n_excluded": 504
+    },
+    {
+     "location_layer": "fc1",
+     "location_module": "bias",
+     "aaad": 0.077268,
+     "asd": 0.182153,
+     "arin": 0.139911,
+     "init_acc": 0.756445,
+     "n": 6552,
+     "n_excluded": 504
+    },
+    {
+     "location_layer": "fc1",
+     "location_module": "weight",
+     "aaad": 0.051428,
+     "asd": 0.139927,
+     "arin": 0.105414,
+     "init_acc": 0.756445,
+     "n": 6552,
+     "n_excluded": 504
+    }
+   ],
+   "bit": [
+    {
+     "bit_index": "0",
+     "aaad": 0.013808,
+     "asd": 0.086548,
+     "arin": 0.061973,
+     "init_acc": 0.756433,
+     "n": 3024,
+     "n_excluded": 3024
+    },
+    {
+     "bit_index": "1",
+     "aaad": 0.230266,
+     "asd": 0.401067,
+     "arin": 0.327014,
+     "init_acc": 0.756433,
+     "n": 6048,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "3",
+     "aaad": 0.00729,
+     "asd": 0.07663,
+     "arin": 0.054431,
+     "init_acc": 0.756433,
+     "n": 6048,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "6",
+     "aaad": 0.013113,
+     "asd": 0.086712,
+     "arin": 0.062012,
+     "init_acc": 0.756433,
+     "n": 6048,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "10",
+     "aaad": 0.004437,
+     "asd": 0.072368,
+     "arin": 0.051268,
+     "init_acc": 0.756433,
+     "n": 6048,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "15",
+     "aaad": 0.004436,
+     "asd": 0.072294,
+     "arin": 0.051216,
+     "init_acc": 0.756433,
+     "n": 6048,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "21",
+     "aaad": 0.004332,
+     "asd": 0.072261,
+     "arin": 0.051188,
+     "init_acc": 0.756433,
+     "n": 6048,
+     "n_excluded": 0
+    }
+   ],
+   "orig_bit": [
+    {
+     "original_bit_condition": "0",
+     "aaad": 0.074126,
+     "asd": 0.174635,
+     "arin": 0.134149,
+     "init_acc": 0.755732,
+     "n": 20457,
+     "n_excluded": 3024
+    },
+    {
+     "original_bit_condition": "1",
+     "aaad": 0.006431,
+     "asd": 0.075031,
+     "arin": 0.053249,
+     "init_acc": 0.757194,
+     "n": 18855,
+     "n_excluded": 0
+    }
+   ],
+   "variant_prior": [
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "gaussian",
+     "aaad": 0.042115,
+     "asd": 0.12946,
+     "arin": 0.096264,
+     "init_acc": 0.791517,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "laplace",
+     "aaad": 0.04322,
+     "asd": 0.141289,
+     "arin": 0.104476,
+     "init_acc": 0.794453,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "uniform",
+     "aaad": 0.04113,
+     "asd": 0.109248,
+     "arin": 0.082543,
+     "init_acc": 0.699321,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "gaussian",
+     "aaad": 0.044788,
+     "asd": 0.135187,
+     "arin": 0.100701,
+     "init_acc": 0.800353,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "laplace",
+     "aaad": 0.044299,
+     "asd": 0.143652,
+     "arin": 0.106297,
+     "init_acc": 0.793122,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "uniform",
+     "aaad": 0.038846,
+     "asd": 0.102794,
+     "arin": 0.077704,
+     "init_acc": 0.68776,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "gaussian",
+     "aaad": 0.041568,
+     "asd": 0.133237,
+     "arin": 0.098692,
+     "init_acc": 0.778942,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "laplace",
+     "aaad": 0.040766,
+     "asd": 0.144596,
+     "arin": 0.10623,
+     "init_acc": 0.756305,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "uniform",
+     "aaad": 0.039523,
+     "asd": 0.100951,
+     "arin": 0.076659,
+     "init_acc": 0.685635,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "gaussian",
+     "aaad": 0.041033,
+     "asd": 0.130008,
+     "arin": 0.0964,
+     "init_acc": 0.801164,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "laplace",
+     "aaad": 0.042381,
+     "asd": 0.146173,
+     "arin": 0.107617,
+     "init_acc": 0.787766,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "uniform",
+     "aaad": 0.040228,
+     "asd": 0.105754,
+     "arin": 0.080007,
+     "init_acc": 0.700864,
+     "n": 3276,
+     "n_excluded": 252
+    }
+   ],
+   "prior_param": [
+    {
+     "prior": "gaussian",
+     "param_type": "locs",
+     "aaad": 0.03942,
+     "asd": 0.130122,
+     "arin": 0.09614,
+     "init_acc": 0.792994,
+     "n": 7056,
+     "n_excluded": 0
+    },
+    {
+     "prior": "gaussian",
+     "param_type": "scales",
+     "aaad": 0.045825,
+     "asd": 0.134133,
+     "arin": 0.100228,
+     "init_acc": 0.792994,
+     "n": 6048,
+     "n_excluded": 1008
+    },
+    {
+     "prior": "laplace",
+     "param_type": "locs",
+     "aaad": 0.040362,
+     "asd": 0.142262,
+     "arin": 0.104565,
+     "init_acc": 0.782912,
+     "n": 7056,
+     "n_excluded": 0
+    },
+    {
+     "prior": "laplace",
+     "param_type": "scales",
+     "aaad": 0.045355,
+     "asd": 0.145871,
+     "arin": 0.108017,
+     "init_acc": 0.782912,
+     "n": 6048,
+     "n_excluded": 1008
+    },
+    {
+     "prior": "uniform",
+     "param_type": "lows",
+     "aaad": 0.030824,
+     "asd": 0.094038,
+     "arin": 0.069976,
+     "init_acc": 0.693395,
+     "n": 7056,
+     "n_excluded": 0
+    },
+    {
+     "prior": "uniform",
+     "param_type": "widths",
+     "aaad": 0.050558,
+     "asd": 0.11711,
+     "arin": 0.090196,
+     "init_acc": 0.693395,
+     "n": 6048,
+     "n_excluded": 1008
+    }
+   ],
+   "prior_b": [
+    {
+     "prior_b": "0.1000000014901161",
+     "aaad": 0.036929,
+     "asd": 0.119752,
+     "arin": 0.088612,
+     "init_acc": 0.67343,
+     "n": 13104,
+     "n_excluded": 1008
+    },
+    {
+     "prior_b": "1.0",
+     "aaad": 0.042583,
+     "asd": 0.126518,
+     "arin": 0.094393,
+     "init_acc": 0.793538,
+     "n": 13104,
+     "n_excluded": 1008
+    },
+    {
+     "prior_b": "10.0",
+     "aaad": 0.045462,
+     "asd": 0.134318,
+     "arin": 0.10027,
+     "init_acc": 0.802332,
+     "n": 13104,
+     "n_excluded": 1008
+    }
+   ]
+  },
+  "b0.1": {
+   "overall": {
+    "aaad": 0.036929,
+    "asd": 0.119752,
+    "arin": 0.088612,
+    "init_acc": 0.67343,
+    "n": 13104,
+    "n_excluded": 1008,
+    "n_configs": 84
+   },
+   "variant": [
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "aaad": 0.037656,
+     "asd": 0.120306,
+     "arin": 0.089139,
+     "init_acc": 0.686658,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "aaad": 0.040473,
+     "asd": 0.123034,
+     "arin": 0.091585,
+     "init_acc": 0.670556,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "aaad": 0.032909,
+     "asd": 0.114189,
+     "arin": 0.08403,
+     "init_acc": 0.649965,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "aaad": 0.036678,
+     "asd": 0.121477,
+     "arin": 0.089727,
+     "init_acc": 0.686543,
+     "n": 3276,
+     "n_excluded": 252
+    }
+   ],
+   "prior": [
+    {
+     "prior": "gaussian",
+     "aaad": 0.040573,
+     "asd": 0.127332,
+     "arin": 0.094498,
+     "init_acc": 0.777315,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "prior": "laplace",
+     "aaad": 0.04295,
+     "asd": 0.147553,
+     "arin": 0.108666,
+     "init_acc": 0.772103,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "prior": "uniform",
+     "aaad": 0.027264,
+     "asd": 0.08437,
+     "arin": 0.062696,
+     "init_acc": 0.470873,
+     "n": 4368,
+     "n_excluded": 336
+    }
+   ],
+   "activation": [
+    {
+     "activation_fn": "_actRWG",
+     "aaad": 0.025442,
+     "asd": 0.092288,
+     "arin": 0.067692,
+     "init_acc": 0.709059,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "_actWG",
+     "aaad": 0.025582,
+     "asd": 0.097021,
+     "arin": 0.070949,
+     "init_acc": 0.743256,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "relu",
+     "aaad": 0.058332,
+     "asd": 0.148265,
+     "arin": 0.112661,
+     "init_acc": 0.65463,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "relu6",
+     "aaad": 0.048154,
+     "asd": 0.132022,
+     "arin": 0.099369,
+     "init_acc": 0.640972,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "sigmoid",
+     "aaad": 0.028716,
+     "asd": 0.124175,
+     "arin": 0.090123,
+     "init_acc": 0.545015,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "sin",
+     "aaad": 0.034515,
+     "asd": 0.11852,
+     "arin": 0.087287,
+     "init_acc": 0.721296,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "tanh",
+     "aaad": 0.037762,
+     "asd": 0.125971,
+     "arin": 0.092991,
+     "init_acc": 0.699784,
+     "n": 1872,
+     "n_excluded": 144
+    }
+   ],
+   "param_type": [
+    {
+     "param_type": "locs",
+     "aaad": 0.041139,
+     "asd": 0.138169,
+     "arin": 0.101939,
+     "init_acc": 0.774709,
+     "n": 4704,
+     "n_excluded": 0
+    },
+    {
+     "param_type": "lows",
+     "aaad": 0.021597,
+     "asd": 0.069791,
+     "arin": 0.051658,
+     "init_acc": 0.470873,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "param_type": "scales",
+     "aaad": 0.042488,
+     "asd": 0.136595,
+     "arin": 0.101152,
+     "init_acc": 0.774709,
+     "n": 4032,
+     "n_excluded": 672
+    },
+    {
+     "param_type": "widths",
+     "aaad": 0.033877,
+     "asd": 0.101379,
+     "arin": 0.075582,
+     "init_acc": 0.470873,
+     "n": 2016,
+     "n_excluded": 336
+    }
+   ],
+   "layer": [
+    {
+     "location_layer": "conv1",
+     "aaad": 0.031553,
+     "asd": 0.112477,
+     "arin": 0.082603,
+     "init_acc": 0.67343,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "location_layer": "conv2",
+     "aaad": 0.021329,
+     "asd": 0.095686,
+     "arin": 0.069321,
+     "init_acc": 0.67343,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "location_layer": "fc1",
+     "aaad": 0.057906,
+     "asd": 0.151092,
+     "arin": 0.114416,
+     "init_acc": 0.67343,
+     "n": 4368,
+     "n_excluded": 336
+    }
+   ],
+   "layer_module": [
+    {
+     "location_layer": "conv1",
+     "location_module": "bias",
+     "aaad": 0.028747,
+     "asd": 0.108421,
+     "arin": 0.079314,
+     "init_acc": 0.67343,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv1",
+     "location_module": "weight",
+     "aaad": 0.034359,
+     "asd": 0.116532,
+     "arin": 0.085908,
+     "init_acc": 0.67343,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv2",
+     "location_module": "bias",
+     "aaad": 0.023168,
+     "asd": 0.098578,
+     "arin": 0.071604,
+     "init_acc": 0.67343,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv2",
+     "location_module": "weight",
+     "aaad": 0.019489,
+     "asd": 0.092794,
+     "arin": 0.067047,
+     "init_acc": 0.67343,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "fc1",
+     "location_module": "bias",
+     "aaad": 0.070787,
+     "asd": 0.173492,
+     "arin": 0.132496,
+     "init_acc": 0.67343,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "fc1",
+     "location_module": "weight",
+     "aaad": 0.045026,
+     "asd": 0.128691,
+     "arin": 0.096407,
+     "init_acc": 0.67343,
+     "n": 2184,
+     "n_excluded": 168
+    }
+   ],
+   "bit": [
+    {
+     "bit_index": "0",
+     "aaad": 0.012542,
+     "asd": 0.080902,
+     "arin": 0.05789,
+     "init_acc": 0.67343,
+     "n": 1008,
+     "n_excluded": 1008
+    },
+    {
+     "bit_index": "1",
+     "aaad": 0.199452,
+     "asd": 0.372313,
+     "arin": 0.298662,
+     "init_acc": 0.67343,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "3",
+     "aaad": 0.00743,
+     "asd": 0.073492,
+     "arin": 0.052232,
+     "init_acc": 0.67343,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "6",
+     "aaad": 0.013569,
+     "asd": 0.084853,
+     "arin": 0.060763,
+     "init_acc": 0.67343,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "10",
+     "aaad": 0.004467,
+     "asd": 0.069161,
+     "arin": 0.049006,
+     "init_acc": 0.67343,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "15",
+     "aaad": 0.004509,
+     "asd": 0.0691,
+     "arin": 0.048965,
+     "init_acc": 0.67343,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "21",
+     "aaad": 0.004342,
+     "asd": 0.069014,
+     "arin": 0.048897,
+     "init_acc": 0.67343,
+     "n": 2016,
+     "n_excluded": 0
+    }
+   ],
+   "orig_bit": [
+    {
+     "original_bit_condition": "0",
+     "aaad": 0.063795,
+     "asd": 0.16255,
+     "arin": 0.123475,
+     "init_acc": 0.677299,
+     "n": 6972,
+     "n_excluded": 1008
+    },
+    {
+     "original_bit_condition": "1",
+     "aaad": 0.006383,
+     "asd": 0.07109,
+     "arin": 0.050471,
+     "init_acc": 0.669032,
+     "n": 6132,
+     "n_excluded": 0
+    }
+   ],
+   "variant_prior": [
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "gaussian",
+     "aaad": 0.043109,
+     "asd": 0.131751,
+     "arin": 0.098022,
+     "init_acc": 0.783757,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "laplace",
+     "aaad": 0.040859,
+     "asd": 0.140605,
+     "arin": 0.103535,
+     "init_acc": 0.784444,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "uniform",
+     "aaad": 0.029,
+     "asd": 0.088563,
+     "arin": 0.065895,
+     "init_acc": 0.491772,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "gaussian",
+     "aaad": 0.043975,
+     "asd": 0.127646,
+     "arin": 0.095465,
+     "init_acc": 0.781376,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "laplace",
+     "aaad": 0.050209,
+     "asd": 0.156062,
+     "arin": 0.115923,
+     "init_acc": 0.783016,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "uniform",
+     "aaad": 0.027236,
+     "asd": 0.085394,
+     "arin": 0.06338,
+     "init_acc": 0.447275,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "gaussian",
+     "aaad": 0.037317,
+     "asd": 0.121804,
+     "arin": 0.09008,
+     "init_acc": 0.758889,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "laplace",
+     "aaad": 0.037852,
+     "asd": 0.144803,
+     "arin": 0.105832,
+     "init_acc": 0.739656,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "uniform",
+     "aaad": 0.023559,
+     "asd": 0.075959,
+     "arin": 0.056236,
+     "init_acc": 0.451349,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "gaussian",
+     "aaad": 0.037892,
+     "asd": 0.128127,
+     "arin": 0.094478,
+     "init_acc": 0.785238,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "laplace",
+     "aaad": 0.04288,
+     "asd": 0.14874,
+     "arin": 0.109458,
+     "init_acc": 0.781296,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "uniform",
+     "aaad": 0.029262,
+     "asd": 0.087563,
+     "arin": 0.065282,
+     "init_acc": 0.493095,
+     "n": 1092,
+     "n_excluded": 84
+    }
+   ],
+   "prior_param": [
+    {
+     "prior": "gaussian",
+     "param_type": "locs",
+     "aaad": 0.039287,
+     "asd": 0.127492,
+     "arin": 0.094334,
+     "init_acc": 0.777315,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "gaussian",
+     "param_type": "scales",
+     "aaad": 0.042074,
+     "asd": 0.127145,
+     "arin": 0.0947,
+     "init_acc": 0.777315,
+     "n": 2016,
+     "n_excluded": 336
+    },
+    {
+     "prior": "laplace",
+     "param_type": "locs",
+     "aaad": 0.042991,
+     "asd": 0.148846,
+     "arin": 0.109552,
+     "init_acc": 0.772103,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "laplace",
+     "param_type": "scales",
+     "aaad": 0.042902,
+     "asd": 0.146044,
+     "arin": 0.107632,
+     "init_acc": 0.772103,
+     "n": 2016,
+     "n_excluded": 336
+    },
+    {
+     "prior": "uniform",
+     "param_type": "lows",
+     "aaad": 0.021597,
+     "asd": 0.069791,
+     "arin": 0.051658,
+     "init_acc": 0.470873,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "uniform",
+     "param_type": "widths",
+     "aaad": 0.033877,
+     "asd": 0.101379,
+     "arin": 0.075582,
+     "init_acc": 0.470873,
+     "n": 2016,
+     "n_excluded": 336
+    }
+   ]
+  },
+  "b1": {
+   "overall": {
+    "aaad": 0.042583,
+    "asd": 0.126518,
+    "arin": 0.094393,
+    "init_acc": 0.793538,
+    "n": 13104,
+    "n_excluded": 1008,
+    "n_configs": 84
+   },
+   "variant": [
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "aaad": 0.042633,
+     "asd": 0.127129,
+     "arin": 0.094814,
+     "init_acc": 0.795309,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "aaad": 0.042681,
+     "asd": 0.128063,
+     "arin": 0.095451,
+     "init_acc": 0.803298,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "aaad": 0.042523,
+     "asd": 0.124249,
+     "arin": 0.09286,
+     "init_acc": 0.774947,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "aaad": 0.042497,
+     "asd": 0.12663,
+     "arin": 0.094449,
+     "init_acc": 0.800597,
+     "n": 3276,
+     "n_excluded": 252
+    }
+   ],
+   "prior": [
+    {
+     "prior": "gaussian",
+     "aaad": 0.041621,
+     "asd": 0.13147,
+     "arin": 0.097511,
+     "init_acc": 0.796085,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "prior": "laplace",
+     "aaad": 0.041382,
+     "asd": 0.140784,
+     "arin": 0.103761,
+     "init_acc": 0.791274,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "prior": "uniform",
+     "aaad": 0.044746,
+     "asd": 0.107299,
+     "arin": 0.082205,
+     "init_acc": 0.793254,
+     "n": 4368,
+     "n_excluded": 336
+    }
+   ],
+   "activation": [
+    {
+     "activation_fn": "_actRWG",
+     "aaad": 0.028603,
+     "asd": 0.096319,
+     "arin": 0.071047,
+     "init_acc": 0.821651,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "_actWG",
+     "aaad": 0.024037,
+     "asd": 0.090977,
+     "arin": 0.066538,
+     "init_acc": 0.848241,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "relu",
+     "aaad": 0.073606,
+     "asd": 0.168216,
+     "arin": 0.129835,
+     "init_acc": 0.781142,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "relu6",
+     "aaad": 0.066402,
+     "asd": 0.155254,
+     "arin": 0.119401,
+     "init_acc": 0.782942,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "sigmoid",
+     "aaad": 0.045501,
+     "asd": 0.15751,
+     "arin": 0.11593,
+     "init_acc": 0.677685,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "sin",
+     "aaad": 0.02901,
+     "asd": 0.102645,
+     "arin": 0.075424,
+     "init_acc": 0.825,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "tanh",
+     "aaad": 0.030926,
+     "asd": 0.114702,
+     "arin": 0.084003,
+     "init_acc": 0.818102,
+     "n": 1872,
+     "n_excluded": 144
+    }
+   ],
+   "param_type": [
+    {
+     "param_type": "locs",
+     "aaad": 0.037592,
+     "asd": 0.132315,
+     "arin": 0.097264,
+     "init_acc": 0.793679,
+     "n": 4704,
+     "n_excluded": 0
+    },
+    {
+     "param_type": "lows",
+     "aaad": 0.033095,
+     "asd": 0.097188,
+     "arin": 0.072598,
+     "init_acc": 0.793254,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "param_type": "scales",
+     "aaad": 0.046063,
+     "asd": 0.140574,
+     "arin": 0.104601,
+     "init_acc": 0.793679,
+     "n": 4032,
+     "n_excluded": 672
+    },
+    {
+     "param_type": "widths",
+     "aaad": 0.058339,
+     "asd": 0.119094,
+     "arin": 0.093773,
+     "init_acc": 0.793254,
+     "n": 2016,
+     "n_excluded": 336
+    }
+   ],
+   "layer": [
+    {
+     "location_layer": "conv1",
+     "aaad": 0.034206,
+     "asd": 0.115,
+     "arin": 0.084838,
+     "init_acc": 0.793521,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "location_layer": "conv2",
+     "aaad": 0.027031,
+     "asd": 0.103878,
+     "arin": 0.075899,
+     "init_acc": 0.793521,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "location_layer": "fc1",
+     "aaad": 0.066513,
+     "asd": 0.160674,
+     "arin": 0.122964,
+     "init_acc": 0.793571,
+     "n": 4368,
+     "n_excluded": 336
+    }
+   ],
+   "layer_module": [
+    {
+     "location_layer": "conv1",
+     "location_module": "bias",
+     "aaad": 0.030382,
+     "asd": 0.11041,
+     "arin": 0.080974,
+     "init_acc": 0.793521,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv1",
+     "location_module": "weight",
+     "aaad": 0.038031,
+     "asd": 0.11959,
+     "arin": 0.088736,
+     "init_acc": 0.793521,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv2",
+     "location_module": "bias",
+     "aaad": 0.030353,
+     "asd": 0.10884,
+     "arin": 0.079898,
+     "init_acc": 0.793521,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv2",
+     "location_module": "weight",
+     "aaad": 0.023709,
+     "asd": 0.098916,
+     "arin": 0.071926,
+     "init_acc": 0.793521,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "fc1",
+     "location_module": "bias",
+     "aaad": 0.080112,
+     "asd": 0.181723,
+     "arin": 0.14043,
+     "init_acc": 0.793571,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "fc1",
+     "location_module": "weight",
+     "aaad": 0.052915,
+     "asd": 0.139625,
+     "arin": 0.105582,
+     "init_acc": 0.793571,
+     "n": 2184,
+     "n_excluded": 168
+    }
+   ],
+   "bit": [
+    {
+     "bit_index": "0",
+     "aaad": 0.012702,
+     "asd": 0.086037,
+     "arin": 0.061496,
+     "init_acc": 0.793538,
+     "n": 1008,
+     "n_excluded": 1008
+    },
+    {
+     "bit_index": "1",
+     "aaad": 0.238141,
+     "asd": 0.400263,
+     "arin": 0.329334,
+     "init_acc": 0.793538,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "3",
+     "aaad": 0.007074,
+     "asd": 0.076546,
+     "arin": 0.054357,
+     "init_acc": 0.793538,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "6",
+     "aaad": 0.012745,
+     "asd": 0.086329,
+     "arin": 0.061706,
+     "init_acc": 0.793538,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "10",
+     "aaad": 0.004134,
+     "asd": 0.07213,
+     "arin": 0.051088,
+     "init_acc": 0.793538,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "15",
+     "aaad": 0.004228,
+     "asd": 0.072072,
+     "arin": 0.05105,
+     "init_acc": 0.793538,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "21",
+     "aaad": 0.004118,
+     "asd": 0.072004,
+     "arin": 0.050998,
+     "init_acc": 0.793538,
+     "n": 2016,
+     "n_excluded": 0
+    }
+   ],
+   "orig_bit": [
+    {
+     "original_bit_condition": "0",
+     "aaad": 0.075917,
+     "asd": 0.17338,
+     "arin": 0.133835,
+     "init_acc": 0.79249,
+     "n": 6860,
+     "n_excluded": 1008
+    },
+    {
+     "original_bit_condition": "1",
+     "aaad": 0.005961,
+     "asd": 0.075032,
+     "arin": 0.053223,
+     "init_acc": 0.794689,
+     "n": 6244,
+     "n_excluded": 0
+    }
+   ],
+   "variant_prior": [
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "gaussian",
+     "aaad": 0.040642,
+     "asd": 0.131583,
+     "arin": 0.097381,
+     "init_acc": 0.796772,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "laplace",
+     "aaad": 0.041026,
+     "asd": 0.13841,
+     "arin": 0.10208,
+     "init_acc": 0.80336,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "uniform",
+     "aaad": 0.04623,
+     "asd": 0.111392,
+     "arin": 0.08528,
+     "init_acc": 0.785794,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "gaussian",
+     "aaad": 0.044536,
+     "asd": 0.143567,
+     "arin": 0.106289,
+     "init_acc": 0.808069,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "laplace",
+     "aaad": 0.040397,
+     "asd": 0.137855,
+     "arin": 0.101578,
+     "init_acc": 0.798466,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "uniform",
+     "aaad": 0.043109,
+     "asd": 0.102767,
+     "arin": 0.078802,
+     "init_acc": 0.80336,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "gaussian",
+     "aaad": 0.039127,
+     "asd": 0.125388,
+     "arin": 0.092879,
+     "init_acc": 0.778307,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "laplace",
+     "aaad": 0.041931,
+     "asd": 0.1393,
+     "arin": 0.102866,
+     "init_acc": 0.761614,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "uniform",
+     "aaad": 0.04651,
+     "asd": 0.108058,
+     "arin": 0.083186,
+     "init_acc": 0.784921,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "gaussian",
+     "aaad": 0.042179,
+     "asd": 0.125343,
+     "arin": 0.093514,
+     "init_acc": 0.80119,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "laplace",
+     "aaad": 0.042176,
+     "asd": 0.14757,
+     "arin": 0.108526,
+     "init_acc": 0.801658,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "uniform",
+     "aaad": 0.043136,
+     "asd": 0.106977,
+     "arin": 0.081562,
+     "init_acc": 0.798942,
+     "n": 1092,
+     "n_excluded": 84
+    }
+   ],
+   "prior_param": [
+    {
+     "prior": "gaussian",
+     "param_type": "locs",
+     "aaad": 0.037517,
+     "asd": 0.127914,
+     "arin": 0.094259,
+     "init_acc": 0.796085,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "gaussian",
+     "param_type": "scales",
+     "aaad": 0.04641,
+     "asd": 0.135619,
+     "arin": 0.101357,
+     "init_acc": 0.796085,
+     "n": 2016,
+     "n_excluded": 336
+    },
+    {
+     "prior": "laplace",
+     "param_type": "locs",
+     "aaad": 0.037668,
+     "asd": 0.136717,
+     "arin": 0.100276,
+     "init_acc": 0.791274,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "laplace",
+     "param_type": "scales",
+     "aaad": 0.045715,
+     "asd": 0.145529,
+     "arin": 0.107862,
+     "init_acc": 0.791274,
+     "n": 2016,
+     "n_excluded": 336
+    },
+    {
+     "prior": "uniform",
+     "param_type": "lows",
+     "aaad": 0.033095,
+     "asd": 0.097188,
+     "arin": 0.072598,
+     "init_acc": 0.793254,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "uniform",
+     "param_type": "widths",
+     "aaad": 0.058339,
+     "asd": 0.119094,
+     "arin": 0.093773,
+     "init_acc": 0.793254,
+     "n": 2016,
+     "n_excluded": 336
+    }
+   ]
+  },
+  "b10": {
+   "overall": {
+    "aaad": 0.045462,
+    "asd": 0.134318,
+    "arin": 0.10027,
+    "init_acc": 0.802332,
+    "n": 13104,
+    "n_excluded": 1008,
+    "n_configs": 84
+   },
+   "variant": [
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "aaad": 0.046176,
+     "asd": 0.132562,
+     "arin": 0.09926,
+     "init_acc": 0.803325,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "aaad": 0.044779,
+     "asd": 0.130536,
+     "arin": 0.097583,
+     "init_acc": 0.807381,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "aaad": 0.046425,
+     "asd": 0.140346,
+     "arin": 0.104528,
+     "init_acc": 0.79597,
+     "n": 3276,
+     "n_excluded": 252
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "aaad": 0.044467,
+     "asd": 0.133828,
+     "arin": 0.099718,
+     "init_acc": 0.802654,
+     "n": 3276,
+     "n_excluded": 252
+    }
+   ],
+   "prior": [
+    {
+     "prior": "gaussian",
+     "aaad": 0.044933,
+     "asd": 0.137117,
+     "arin": 0.102029,
+     "init_acc": 0.805582,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "prior": "laplace",
+     "aaad": 0.043667,
+     "asd": 0.143446,
+     "arin": 0.106027,
+     "init_acc": 0.785357,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "prior": "uniform",
+     "aaad": 0.047785,
+     "asd": 0.122391,
+     "arin": 0.092906,
+     "init_acc": 0.816058,
+     "n": 4368,
+     "n_excluded": 336
+    }
+   ],
+   "activation": [
+    {
+     "activation_fn": "_actRWG",
+     "aaad": 0.030528,
+     "asd": 0.098966,
+     "arin": 0.073233,
+     "init_acc": 0.830432,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "_actWG",
+     "aaad": 0.02434,
+     "asd": 0.093954,
+     "arin": 0.068629,
+     "init_acc": 0.845972,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "relu",
+     "aaad": 0.081773,
+     "asd": 0.180963,
+     "arin": 0.140418,
+     "init_acc": 0.791204,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "relu6",
+     "aaad": 0.06903,
+     "asd": 0.16453,
+     "arin": 0.126165,
+     "init_acc": 0.797299,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "sigmoid",
+     "aaad": 0.055923,
+     "asd": 0.180861,
+     "arin": 0.133862,
+     "init_acc": 0.68946,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "sin",
+     "aaad": 0.028339,
+     "asd": 0.106741,
+     "arin": 0.078092,
+     "init_acc": 0.834552,
+     "n": 1872,
+     "n_excluded": 144
+    },
+    {
+     "activation_fn": "tanh",
+     "aaad": 0.028298,
+     "asd": 0.114212,
+     "arin": 0.083202,
+     "init_acc": 0.827407,
+     "n": 1872,
+     "n_excluded": 144
+    }
+   ],
+   "param_type": [
+    {
+     "param_type": "locs",
+     "aaad": 0.040941,
+     "asd": 0.138091,
+     "arin": 0.101847,
+     "init_acc": 0.79547,
+     "n": 4704,
+     "n_excluded": 0
+    },
+    {
+     "param_type": "lows",
+     "aaad": 0.037781,
+     "asd": 0.115136,
+     "arin": 0.085685,
+     "init_acc": 0.816058,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "param_type": "scales",
+     "aaad": 0.048219,
+     "asd": 0.142836,
+     "arin": 0.1066,
+     "init_acc": 0.79547,
+     "n": 4032,
+     "n_excluded": 672
+    },
+    {
+     "param_type": "widths",
+     "aaad": 0.059457,
+     "asd": 0.130856,
+     "arin": 0.101633,
+     "init_acc": 0.816058,
+     "n": 2016,
+     "n_excluded": 336
+    }
+   ],
+   "layer": [
+    {
+     "location_layer": "conv1",
+     "aaad": 0.036535,
+     "asd": 0.119958,
+     "arin": 0.08867,
+     "init_acc": 0.802332,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "location_layer": "conv2",
+     "aaad": 0.031226,
+     "asd": 0.111643,
+     "arin": 0.081973,
+     "init_acc": 0.802332,
+     "n": 4368,
+     "n_excluded": 336
+    },
+    {
+     "location_layer": "fc1",
+     "aaad": 0.068624,
+     "asd": 0.171354,
+     "arin": 0.130521,
+     "init_acc": 0.802332,
+     "n": 4368,
+     "n_excluded": 336
+    }
+   ],
+   "layer_module": [
+    {
+     "location_layer": "conv1",
+     "location_module": "bias",
+     "aaad": 0.034358,
+     "asd": 0.117501,
+     "arin": 0.086564,
+     "init_acc": 0.802332,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv1",
+     "location_module": "weight",
+     "aaad": 0.038713,
+     "asd": 0.122415,
+     "arin": 0.090785,
+     "init_acc": 0.802332,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv2",
+     "location_module": "bias",
+     "aaad": 0.034326,
+     "asd": 0.116172,
+     "arin": 0.085657,
+     "init_acc": 0.802332,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "conv2",
+     "location_module": "weight",
+     "aaad": 0.028125,
+     "asd": 0.107114,
+     "arin": 0.078308,
+     "init_acc": 0.802332,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "fc1",
+     "location_module": "bias",
+     "aaad": 0.080905,
+     "asd": 0.191244,
+     "arin": 0.146833,
+     "init_acc": 0.802332,
+     "n": 2184,
+     "n_excluded": 168
+    },
+    {
+     "location_layer": "fc1",
+     "location_module": "weight",
+     "aaad": 0.056343,
+     "asd": 0.151463,
+     "arin": 0.114271,
+     "init_acc": 0.802332,
+     "n": 2184,
+     "n_excluded": 168
+    }
+   ],
+   "bit": [
+    {
+     "bit_index": "0",
+     "aaad": 0.01618,
+     "asd": 0.092706,
+     "arin": 0.066544,
+     "init_acc": 0.802332,
+     "n": 1008,
+     "n_excluded": 1008
+    },
+    {
+     "bit_index": "1",
+     "aaad": 0.253204,
+     "asd": 0.430623,
+     "arin": 0.353234,
+     "init_acc": 0.802332,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "3",
+     "aaad": 0.007364,
+     "asd": 0.079853,
+     "arin": 0.056704,
+     "init_acc": 0.802332,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "6",
+     "aaad": 0.013024,
+     "asd": 0.088953,
+     "arin": 0.06357,
+     "init_acc": 0.802332,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "10",
+     "aaad": 0.004709,
+     "asd": 0.075813,
+     "arin": 0.053711,
+     "init_acc": 0.802332,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "15",
+     "aaad": 0.004572,
+     "asd": 0.07571,
+     "arin": 0.053632,
+     "init_acc": 0.802332,
+     "n": 2016,
+     "n_excluded": 0
+    },
+    {
+     "bit_index": "21",
+     "aaad": 0.004537,
+     "asd": 0.075763,
+     "arin": 0.053669,
+     "init_acc": 0.802332,
+     "n": 2016,
+     "n_excluded": 0
+    }
+   ],
+   "orig_bit": [
+    {
+     "original_bit_condition": "0",
+     "aaad": 0.083144,
+     "asd": 0.188653,
+     "arin": 0.145779,
+     "init_acc": 0.800213,
+     "n": 6625,
+     "n_excluded": 1008
+    },
+    {
+     "original_bit_condition": "1",
+     "aaad": 0.00693,
+     "asd": 0.078759,
+     "arin": 0.055906,
+     "init_acc": 0.804499,
+     "n": 6479,
+     "n_excluded": 0
+    }
+   ],
+   "variant_prior": [
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "gaussian",
+     "aaad": 0.042594,
+     "asd": 0.125046,
+     "arin": 0.09341,
+     "init_acc": 0.794021,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "laplace",
+     "aaad": 0.047775,
+     "asd": 0.144852,
+     "arin": 0.107853,
+     "init_acc": 0.795556,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 0 \u2014 base",
+     "prior": "uniform",
+     "aaad": 0.04816,
+     "asd": 0.127789,
+     "arin": 0.096564,
+     "init_acc": 0.820397,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "gaussian",
+     "aaad": 0.045853,
+     "asd": 0.134348,
+     "arin": 0.100379,
+     "init_acc": 0.811614,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "laplace",
+     "aaad": 0.04229,
+     "asd": 0.137038,
+     "arin": 0.10141,
+     "init_acc": 0.797884,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 1 \u2014 smartpool",
+     "prior": "uniform",
+     "aaad": 0.046194,
+     "asd": 0.120222,
+     "arin": 0.091069,
+     "init_acc": 0.812646,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "gaussian",
+     "aaad": 0.04826,
+     "asd": 0.152519,
+     "arin": 0.113117,
+     "init_acc": 0.79963,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "laplace",
+     "aaad": 0.042515,
+     "asd": 0.149684,
+     "arin": 0.110029,
+     "init_acc": 0.767646,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 2 \u2014 dropout",
+     "prior": "uniform",
+     "aaad": 0.0485,
+     "asd": 0.118835,
+     "arin": 0.090758,
+     "init_acc": 0.820635,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "gaussian",
+     "aaad": 0.043026,
+     "asd": 0.136554,
+     "arin": 0.101238,
+     "init_acc": 0.817063,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "laplace",
+     "aaad": 0.042087,
+     "asd": 0.14221,
+     "arin": 0.104869,
+     "init_acc": 0.780344,
+     "n": 1092,
+     "n_excluded": 84
+    },
+    {
+     "variant_label": "Model 3 \u2014 weight decay",
+     "prior": "uniform",
+     "aaad": 0.048286,
+     "asd": 0.12272,
+     "arin": 0.093252,
+     "init_acc": 0.810556,
+     "n": 1092,
+     "n_excluded": 84
+    }
+   ],
+   "prior_param": [
+    {
+     "prior": "gaussian",
+     "param_type": "locs",
+     "aaad": 0.041456,
+     "asd": 0.13496,
+     "arin": 0.099832,
+     "init_acc": 0.805582,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "gaussian",
+     "param_type": "scales",
+     "aaad": 0.04899,
+     "asd": 0.139633,
+     "arin": 0.104636,
+     "init_acc": 0.805582,
+     "n": 2016,
+     "n_excluded": 336
+    },
+    {
+     "prior": "laplace",
+     "param_type": "locs",
+     "aaad": 0.040426,
+     "asd": 0.141223,
+     "arin": 0.103871,
+     "init_acc": 0.785357,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "laplace",
+     "param_type": "scales",
+     "aaad": 0.047447,
+     "asd": 0.146039,
+     "arin": 0.108579,
+     "init_acc": 0.785357,
+     "n": 2016,
+     "n_excluded": 336
+    },
+    {
+     "prior": "uniform",
+     "param_type": "lows",
+     "aaad": 0.037781,
+     "asd": 0.115136,
+     "arin": 0.085685,
+     "init_acc": 0.816058,
+     "n": 2352,
+     "n_excluded": 0
+    },
+    {
+     "prior": "uniform",
+     "param_type": "widths",
+     "aaad": 0.059457,
+     "asd": 0.130856,
+     "arin": 0.101633,
+     "init_acc": 0.816058,
+     "n": 2016,
+     "n_excluded": 336
+    }
+   ]
+  }
+ }
+}</script>
+<script>
+const DATA = JSON.parse(document.getElementById("seuData").textContent);
+
+const LABELS = {
+  relu:"ReLU", relu6:"ReLU6", sigmoid:"Sigmoid", tanh:"Tanh", sin:"Sinusoidal",
+  _actWG:"WG (weighted Gaussian)", _actRWG:"RWG (random weighted Gaussian)",
+  gaussian:"Gaussian", laplace:"Laplace", uniform:"Uniform",
+  locs:"locs — centre (Gaussian, Laplace)", scales:"scales — spread (Gaussian, Laplace)",
+  lows:"lows — centre (Uniform)", widths:"widths — spread (Uniform)",
+  conv1:"conv1", conv2:"conv2", fc1:"fc1", weight:"weight", bias:"bias",
+  "0":"0", "1":"1"
+};
+const ORDER = {
+  prior:["gaussian","laplace","uniform"],
+  activation:["relu","relu6","sigmoid","tanh","sin","_actWG","_actRWG"],
+  param_type:["locs","scales","lows","widths"],
+  layer:["conv1","conv2","fc1"],
+  bit:["0","1","3","6","10","15","21"],
+  orig_bit:["0","1"]
+};
+const KEYCOL = {
+  variant:"variant_label", prior:"prior", activation:"activation_fn",
+  param_type:"param_type", layer:"location_layer", bit:"bit_index",
+  orig_bit:"original_bit_condition", prior_b:"prior_b", layer_module:"location_layer"
+};
+const HEADCOL = {
+  variant:"Variant", prior:"Prior", activation:"Activation", param_type:"Parameter",
+  layer:"Layer", bit:"Bit", orig_bit:"Pre-flip value", prior_b:"Prior scale b",
+  layer_module:"Layer"
+};
+const BITNOTE = {
+  "0":"sign", "1":"exponent MSB", "3":"exponent", "6":"exponent",
+  "10":"mantissa", "15":"mantissa", "21":"mantissa"
+};
+const ORIGNOTE = {"0":"0 → 1 flip", "1":"1 → 0 flip"};
+
+const f4 = v => v.toFixed(4);
+const pct = v => (v * 100).toFixed(1) + "%";
+const int = v => v.toLocaleString("en-US");
+
+function rowLabel(table, r) {
+  if (table === "layer_module") return LABELS[r.location_layer] + " · " + LABELS[r.location_module];
+  if (table === "prior_b") return "b = " + (+Number(r.prior_b).toFixed(4)).toString();
+  const raw = r[KEYCOL[table]];
+  return LABELS[raw] ?? raw;
+}
+
+function sortRows(table, rows) {
+  const order = ORDER[table];
+  if (!order) return rows;
+  const k = KEYCOL[table];
+  return [...rows].sort((a, b) => order.indexOf(String(a[k])) - order.indexOf(String(b[k])));
+}
+
+function renderTable(el, table, rows) {
+  rows = sortRows(table, rows);
+  const maxArin = Math.max(...rows.map(r => r.arin));
+  const minArin = Math.min(...rows.map(r => r.arin));
+  const single = rows.length < 3;
+
+  const head = `<caption>${el.dataset.caption}</caption><thead><tr>
+    <th scope="col">${HEADCOL[table]}</th>
+    <th scope="col">Init. acc.</th>
+    <th scope="col">AAAD</th>
+    <th scope="col">ASD</th>
+    <th scope="col">ARIn — lower is more robust</th>
+    <th scope="col">n</th></tr></thead>`;
+
+  const body = rows.map(r => {
+    const flag = r.arin > 0.2;
+    const best = !single && r.arin === minArin;
+    let note = "";
+    if (table === "bit") note = BITNOTE[String(r.bit_index)] ?? "";
+    if (table === "orig_bit") note = ORIGNOTE[String(r.original_bit_condition)] ?? "";
+    const noteHtml = note ? ` <span class="dim">${note}</span>` : "";
+    const chip = flag ? '<span class="chip warn">catastrophic</span>'
+               : best ? '<span class="chip">most robust</span>' : "";
+    const excl = r.n_excluded ? `<br><span class="dim" style="font-size:.72rem">${int(r.n_excluded)} excluded</span>` : "";
+    return `<tr class="${flag ? "flag" : ""}">
+      <th scope="row">${rowLabel(table, r)}${noteHtml}${chip}</th>
+      <td class="num dim">${pct(r.init_acc)}</td>
+      <td class="num">${f4(r.aaad)}</td>
+      <td class="num">${f4(r.asd)}</td>
+      <td class="num meter"><span class="meterbox"><span>${f4(r.arin)}</span>
+        <span class="track"><i style="width:${(r.arin / maxArin * 100).toFixed(1)}%"></i></span></span></td>
+      <td class="num dim">${int(r.n)}${excl}</td></tr>`;
+  }).join("");
+
+  el.innerHTML = head + "<tbody>" + body + "</tbody>";
+}
+
+const SLICE_NOTE = {
+  "b1": "Primary slice — matches the paper's single-scale BNN grid.",
+  "b0.1": "Tight priors: lowest accuracy, lowest absolute error.",
+  "b10": "Wide priors: highest accuracy, least robust.",
+  "all": "All 252 configs pooled across the three prior scales."
+};
+
+function render(sliceKey) {
+  const slice = DATA.slices[sliceKey];
+  const o = slice.overall;
+  document.getElementById("stats").innerHTML = `
+    <div class="stat"><dt>Mean initial accuracy</dt><dd>${pct(o.init_acc)}</dd>
+      <small>MC-10, best checkpoint</small></div>
+    <div class="stat"><dt>AAAD</dt><dd>${f4(o.aaad)}</dd>
+      <small>mean accuracy shift</small></div>
+    <div class="stat"><dt>ASD</dt><dd>${f4(o.asd)}</dd>
+      <small>mean softmax difference</small></div>
+    <div class="stat hero"><dt>ARIn</dt><dd>${f4(o.arin)}</dd>
+      <small>aggregate robustness index</small></div>
+    <div class="stat"><dt>Valid injections</dt><dd>${int(o.n)}</dd>
+      <small>${int(o.n_configs)} configs · ${int(o.n_excluded)} excluded</small></div>`;
+  document.getElementById("sliceNote").textContent = SLICE_NOTE[sliceKey];
+
+  document.querySelectorAll("table[data-table]").forEach(el => {
+    const t = el.dataset.table;
+    const rows = t === "prior_b" ? DATA.slices.all.prior_b : slice[t];
+    if (rows && rows.length) renderTable(el, t, rows);
+  });
+}
+
+document.querySelectorAll(".seg button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".seg button").forEach(b => b.removeAttribute("aria-pressed"));
+    btn.setAttribute("aria-pressed", "true");
+    render(btn.dataset.slice);
+  });
+});
+
+render("b1");
+</script>

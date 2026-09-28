@@ -1,0 +1,157 @@
+\documentclass[a4paper,twoside]{article}
+
+\usepackage{epsfig}
+\usepackage{subcaption}
+\usepackage{calc}
+\usepackage{amssymb}
+\usepackage{amstext}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{multicol}
+\usepackage{pslatex}
+\usepackage{apalike}
+\usepackage{url}
+\usepackage{algorithm2e}
+\usepackage[bottom]{footmisc}
+\usepackage{SCITEPRESS}     
+\usepackage{makecell} 
+\usepackage{booktabs} 
+\usepackage{multirow} 
+\usepackage{array} 
+\usepackage{stfloats}
+\usepackage{float}
+
+\begin{document}
+
+\newcommand{\B}[2]{\ifnum#1=1 \textbf{#2}\else #2\fi}
+
+\title{Robustness of Bayesian Neural Networks Design Choices Against Weight and Bias Perturbation Induced by Single Event Upsets (SEUs)}
+
+\author{\authorname{Revalda Putawara\orcidAuthor{0009-0008-7938-185X}, Dalila O'Grady\orcidAuthor{0000-0002-7982-2917},  James Pope\orcidAuthor{0000-0003-2656-363X}}
+\affiliation{Intelligence Systems Laboratory, University of Bristol, UK }
+% \affiliation{\sup{2}Department of Computing, Main University, MySecondTown, MyCountry}
+\email{ey24622@bristol.ac.uk, mv22726@bristol.ac.uk, james.pope@bristol.ac.uk}
+}
+
+\keywords{Bayesian Neural Networks, Robustness, Single Event Upsets, Prior Distributions}
+
+%\abstract{
+%Recent theoretical machine learning research has shown that the traditional U-shaped bias-variance trade-off hypothesis is not correct for certain deep learning models. Complex models with more parameters will fit the training data well, often with zero training loss, but generalise poorly, a situation known as overfitting. However, some deep learning models have shown to generalise even after overfitting, a situation known as the double descent phenomenon. It is important to understand which deep learning models exhibit this phenomenon for practitioners to design and train these models effectively. It is not known whether more recent deep learning models exhibit this phenomenon. In this study, we investigate double descent in three recent neural network architectures: Liquid Time-Constant Networks (LTCs), Quantised Neural Networks (QNNs), and Spiking Neural Networks (SNNs). We conducted experiments on the MNIST, Fashion MNIST, and CIFAR-10 datasets by varying the widths of the hidden layers while keeping other factors constant. Our results show that LTC models exhibit a subtle form of double descent, while QNN models demonstrate a pronounced double descent on CIFAR-10. However, the SNN models did not show a clear pattern. Interestingly, we found the learning rate scheduler, label noise, and training epochs can significantly affect the double descent phenomenon.}
+
+%\abstract{
+%Bayesian Neural Networks (BNNs) model uncertainty by treating weights and biases as probability distributions, making them attractive for deployment in environments (\textbf{where uncertainly needs to be modelled?}) where reliability under hardware faults is critical. A key fault source is Single Event Upsets (SEUs), caused by radiation that can occur in harsh environments. Prior work has studied deterministic CNNs under SEUs and BNNs under \textbf{adversarial attacks}, but little research examines BNN robustness to SEUs. The problem is that current neural network architectures are not robust.  Previous research has shown typical deep neural networks fail when presented with perturbed (noisy) inputs, particularly in adversarial settings.  Even less research has been conducted into model perturbations in harsh environments.  Making neural networks more robust remains a challenging and active research area.  As space exploration expands, artificial intelligence will increasingly be used in these harsh environments.  Our solution ... In this study, deterministic and Bayesian CNNs were trained with four design choices (baseline, modified pooling, dropout, weight decay) and seven activation functions. For BNNs, three priors (Gaussian, Laplace, Uniform) were tested. Models were subjected to SEU injections across layers, parameters, bit positions, and neuron locations. Robustness was quantified using a new Aggregate Robustness Index (ARIn), combining accuracy and softmax differences. Results show deterministic CNNs achieved higher baseline accuracy (97.55\% vs. 82.85\%), but BNNs were more robust (ARIn 0.0779 vs. 0.1909). Dropout yielded the largest robustness gain, with Gaussian priors outperforming Laplace and Uniform. SEUs on variance parameters were more harmful than on means, and fully connected layers proved most vulnerable. Sigmoid was the most robust activation despite an accuracy trade-off. Overall, BNNs provide more stable prediction confidence, making them suitable for safety-critical applications such as medical imaging and ensemble systems.
+%}
+
+\abstract{
+Bayesian Neural Networks (BNNs) model uncertainty by treating weights and biases as probability distributions, making them attractive for deployment in environments where uncertainty can accommodate unexpected perturbations, leading to improved robustness. A key fault source is Single Event Upsets (SEUs), caused by radiation that can occur in harsh environments. Although robustness to input perturbations has been widely studied for both deterministic and Bayesian CNNs, weight and bias perturbations is not as widely explored, particularly for Bayesian CNN models. The growing use of AI in space missions and other fault-prone environments heightens the urgency in understanding the robustness of BNNs to weight/bias perturbations like SEUs. To address this gap, we offer the solution of introducing Bayesian Neural Networks in harsh environments by simulating it under SEU injections and exploring which design gives better robustness. In this study, deterministic and Bayesian CNN models were subjected to SEU injections across layers, parameters, bit positions, and neuron locations. Robustness was quantified using a new Aggregate Robustness Index (ARIn), combining accuracy and softmax differences. Results show deterministic CNNs achieved higher baseline accuracy (97.55\% vs. 82.85\%), but BNNs were more robust (ARIn 0.0779 vs. 0.1909). Dropout yielded the largest robustness gain, with Gaussian priors outperforming Laplace and Uniform. SEUs on variance parameters were more harmful than on means, and fully connected layers proved most vulnerable. Sigmoid was the most robust activation despite an accuracy trade-off. Overall, BNNs provide more stable prediction confidence, making them suitable for safety-critical applications such as medical imaging and ensemble systems.
+}
+
+%were trained with four design choices (baseline, modified pooling, dropout, weight decay) and seven activation functions. For BNNs, three priors (Gaussian, Laplace, Uniform) were tested.
+
+%Prior work has studied robustness of deterministic CNNs under SEUs and BNNs under \textbf{adversarial attacks}, but little research examines BNN robustness to SEUs.
+
+%The problem is that current neural network architectures are not robust. Previous research has shown typical deep neural networks fail when presented with perturbed (noisy) inputs, particularly in adversarial settings. Even less research has been conducted into model perturbations in harsh environments. Making neural networks more robust remains a challenging and active research area.  As space exploration expands, artificial intelligence will increasingly be used in these harsh environments. 
+
+\onecolumn \maketitle \normalsize \setcounter{footnote}{0} \vfill
+
+% \section{\uppercase{Introduction}}
+% \label{sec:introduction}
+
+\section{Introduction}
+\label{sec:introduction}
+\input{section_introduction}
+
+\section{Background}
+\label{sec:relatedwork}
+\input{section_background}
+
+\section{Methodology}
+\label{sec:methodology}
+\input{section_methodology}
+
+\section{Results}
+\label{sec:results}
+\input{section_results}
+
+\section{Conclusion}
+\label{sec:conclusion}
+\input{section_conclusion}
+
+
+
+
+\bibliographystyle{apalike}
+{\small
+% \bibliography{PutawaraRevalda_mscthesis}}
+\bibliography{references}}
+
+% \newpage
+% \section*{\uppercase{Appendix}}
+
+% % If any, the appendix should appear directly after the
+% % references without numbering, and not on a new page. To do so please use the following command:
+% % \textit{$\backslash$section*\{APPENDIX\}}
+% \begin{table}[h]
+%     \caption{LTC Result Summary}
+%     \label{ltc:double-descent}
+%     \centering
+%     \small
+%     \begin{tabular}{p{0.65cm} p{1.9cm} p{1.2cm} p{0.8cm}}
+%         \toprule
+%         Model & \makecell[l]{Default \\ Setting} & \makecell[l]{Changing \\ Setting} & Result \\
+%         \midrule
+%         \multirow{4}{*}{LTCs} & \makecell[l]{Fashion-MNIST \\ SGD \\ with scheduler \\ 0\% label noise} & 1 layer & \(\times\) \\
+%         & & 3 layers & \(\times\) \\
+%         & & 5 layers & possible \\
+%         & & 10 layers & \(\times\) \\
+%         \cmidrule{2-4}
+%         & \makecell[l]{Adam \\ with scheduler \\ 0\% label noise} & 5 layers & \(\times\)\\
+%         \bottomrule
+%     \end{tabular}
+% \end{table}
+
+% \begin{table} [h]
+%     \caption{QNN Result Summary}
+%     \label{qnn:double-descent}
+%     \centering
+%     \small
+%     \begin{tabular}{p{0.65cm} p{2cm} p{2cm} p{0.8cm}}
+%         \toprule
+%         Model & \makecell[l]{Default \\ Setting} & \makecell[l]{Changing \\ Setting} & Result \\
+%         \midrule
+%         \multirow{5}{*}{QNNs} & \makecell[l]{CIFAR-10 \\ 4 layers \\ Adam \\ without scheduler \\ 50 epochs} & 0\% label noise & \(\checkmark\) \\
+%         & & 10\% label noise & \(\checkmark\) \\
+%         & & 20\% label noise & \(\checkmark\) \\
+%         \cmidrule{2-4}
+%         & \makecell[l]{CIFAR-10 \\ 4 layers \\ Adam \\ without scheduler \\ 10\% label noise \\ 80 epochs} & & \(\checkmark\) \\
+%         \cmidrule{2-4}
+%         & \makecell[l]{CIFAR-10 \\ 4 layers \\ 10\% label noise \\ 20 epochs} & \makecell[l]{Adam\\ no scheduler} & \(\times\) \\
+%         & & \makecell[l]{Adam \\ with scheduler} & \(\times\) \\
+%         & & \makecell[l]{SGD \\ no scheduler} & \(\checkmark\) \\
+%         & & \makecell[l]{SGD \\ with scheduler} & \(\times\) \\
+%         \cmidrule{2-4}
+%         & \makecell[l]{MNIST \\ Adam \\ without scheduler \\ 10\% label noise \\ 50 epochs} & 4 layers & \(\times\) \\
+%         & & 2 layers & \(\checkmark\) \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table}
+
+% \begin{table}[h]
+%     \caption{SNN Result Summary}
+%     \label{snn:double-descent}
+%     \centering
+%     \small
+%     \begin{tabular}{p{0.65cm} p{2cm} p{2cm} p{0.8cm}}
+%         \toprule
+%         Model & \makecell[l]{Default \\ Setting} & \makecell[l]{Changing \\ Setting} & Result \\
+%         \midrule
+%         \multirow{4}{*}{SNN} & \makecell[l]{MNIST \\ SGD \\ 10\% label noise \\ 50 epochs} & 2 layers, without scheduler & \(\times\) \\
+%         & & \makecell[l]{2 layers\\ with scheduler} & \(\times\) \\
+%         & & \makecell[l]{4 layers\\ without scheduler} & \(\times\) \\
+%         & & \makecell[l]{4 layers\\ with scheduler} & \(\times\) \\
+%         \bottomrule
+%     \end{tabular}
+% \end{table}
+
+\end{document}
+

@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (TeX Live 2024)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+The style file: apalike.bst
+Database file #1: references.bib
+Warning--can't use both author and editor fields in Hanif2021
+You've used 25 entries,
+            1935 wiz_defined-function locations,
+            628 strings with 9204 characters,
+and the built_in function-call counts, 11120 in all, are:
+= -- 1073
+> -- 562
+< -- 18
++ -- 204
+- -- 198
+* -- 895
+:= -- 1920
+add.period$ -- 80
+call.type$ -- 25
+change.case$ -- 221
+chr.to.int$ -- 25
+cite$ -- 26
+duplicate$ -- 438
+empty$ -- 692
+format.name$ -- 227
+if$ -- 2220
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 23
+newline$ -- 129
+num.names$ -- 75
+pop$ -- 217
+preamble$ -- 1
+purify$ -- 224
+quote$ -- 0
+skip$ -- 356
+stack$ -- 0
+substring$ -- 609
+swap$ -- 105
+text.length$ -- 8
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 142
+warning$ -- 1
+while$ -- 72
+width$ -- 0
+write$ -- 333
+(There was 1 warning)

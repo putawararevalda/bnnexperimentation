@@ -1,0 +1,345 @@
+<title>ICAART #90 — Results Presentation Plan (EuroSAT + ShipsNet k-fold CIs)</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #5a5f66; --rule: #d8dce1;
+    --accent: #1f4e79; --warn-bg: #fff6e5; --warn-br: #d99b00;
+    --bad-bg: #fdecec; --bad-br: #c0392b; --good-bg: #eaf5ec; --good-br: #2d7a3e;
+    --code-bg: #f5f6f8; --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 60rem; margin: 0 auto; padding: 2.5rem 1.5rem 6rem;
+  }
+  h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 .3rem; letter-spacing: -.01em; }
+  h2 {
+    font-size: 1.3rem; margin: 3rem 0 .9rem; padding-bottom: .35rem;
+    border-bottom: 2px solid var(--accent); color: var(--accent);
+  }
+  h3 { font-size: 1.05rem; margin: 2rem 0 .5rem; }
+  h4 { font-size: .95rem; margin: 1.4rem 0 .4rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .sub { color: var(--muted); margin: 0 0 2rem; font-size: .95rem; }
+  p, li { margin: .55rem 0; }
+  code { font-family: var(--mono); font-size: .88em; background: var(--code-bg); padding: .1em .35em; border-radius: 3px; }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+    padding: 1rem; overflow-x: auto; font-family: var(--mono); font-size: .82rem; line-height: 1.5; border-radius: 4px;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .tw { overflow-x: auto; margin: 1rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .87rem; }
+  th, td { padding: .4rem .6rem; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  th { background: #f0f2f5; font-weight: 600; text-align: right; border-bottom: 2px solid var(--rule); }
+  th:first-child, td:first-child { text-align: left; }
+  tbody tr:hover { background: #fafbfc; }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .hi { font-weight: 700; color: var(--bad-br); }
+  .lo { font-weight: 700; color: var(--good-br); }
+  .box { padding: .9rem 1.1rem; margin: 1.2rem 0; border-radius: 4px; border-left: 4px solid; font-size: .93rem; }
+  .warn { background: var(--warn-bg); border-color: var(--warn-br); }
+  .bad  { background: var(--bad-bg);  border-color: var(--bad-br); }
+  .good { background: var(--good-bg); border-color: var(--good-br); }
+  .box p:first-child { margin-top: 0; } .box p:last-child { margin-bottom: 0; }
+  .tag {
+    display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .06em;
+    padding: .12em .5em; border-radius: 3px; vertical-align: middle; margin-left: .4rem;
+  }
+  .t-real { background: #dcefe1; color: #1d5c2c; }
+  .t-illus { background: #ffe9c7; color: #8a5a00; }
+  .eq {
+    text-align: center; font-family: var(--mono); font-size: 1rem;
+    padding: 1rem; background: var(--code-bg); border: 1px solid var(--rule); border-radius: 4px; margin: 1rem 0;
+  }
+  ul, ol { padding-left: 1.4rem; }
+  .ledger td.d { color: var(--good-br); } .ledger td.u { color: var(--bad-br); }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
+  .foot { color: var(--muted); font-size: .85rem; margin-top: 3rem; border-top: 1px solid var(--rule); padding-top: 1rem; }
+</style>
+
+<h1>Results Presentation Plan</h1>
+<p class="sub">ICAART 2026 Paper #90 — fitting the EuroSAT results and ShipsNet 5-fold confidence intervals into the existing page budget.</p>
+
+<div class="box warn">
+<p><strong>Constraint.</strong> Current page count is the hard limit. Every addition must be paid for by a deletion. The good news: the reviewers already told you which content to cut — Tables 3, 4 and 5 overflow the column, Table 1 and Figures 3–4 are uncited, and R2 says the abstract and introduction are too long. That is the budget.</p>
+</div>
+
+<h2>Part A — Presenting EuroSAT</h2>
+
+<h3>A.1 What the data actually says</h3>
+<p>Aggregated from <code>results/eurosat/seu_clean/</code> (42,336 injection rows, 3,024 degenerate rows excluded as negative scale/width), using the metric definitions in <code>src/evaluation/aggregate.py</code>. All numbers below are computed, not illustrative.</p>
+
+<h4>Model variant — a null result <span class="tag t-real">real</span></h4>
+<div class="tw">
+<table>
+<thead><tr><th>Variant</th><th>AAD</th><th>Softmax Diff</th><th>ARIn</th><th>Init. acc.</th><th>n</th></tr></thead>
+<tbody>
+<tr><td>base</td><td class="num">0.0422</td><td class="num">0.1267</td><td class="num">0.0978</td><td class="num">0.7618</td><td class="num">10584</td></tr>
+<tr><td>dropout</td><td class="num">0.0406</td><td class="num">0.1263</td><td class="num">0.0969</td><td class="num">0.7403</td><td class="num">10584</td></tr>
+<tr><td>smartpool</td><td class="num">0.0426</td><td class="num">0.1272</td><td class="num">0.0983</td><td class="num">0.7604</td><td class="num">10584</td></tr>
+<tr><td>weight decay</td><td class="num">0.0412</td><td class="num">0.1273</td><td class="num">0.0980</td><td class="num">0.7633</td><td class="num">10584</td></tr>
+</tbody>
+</table>
+</div>
+<p>The four variants span <strong>0.0969–0.0983 ARIn</strong> — a 1.4% relative spread. On EuroSAT the regularisation-style design choices do essentially nothing for SEU robustness. <strong>Do not spend a table on this.</strong> It is one sentence, and it is an honest negative result that strengthens the paper rather than weakening it.</p>
+
+<h4>Activation function — the real effect <span class="tag t-real">real</span></h4>
+<div class="tw">
+<table>
+<thead><tr><th>Activation</th><th>AAD</th><th>Softmax Diff</th><th>ARIn</th><th>Init. acc.</th></tr></thead>
+<tbody>
+<tr><td>WG</td><td class="num">0.0247</td><td class="num">0.0940</td><td class="num lo">0.0713</td><td class="num lo">0.8125</td></tr>
+<tr><td>RWG</td><td class="num">0.0282</td><td class="num">0.0959</td><td class="num lo">0.0732</td><td class="num">0.7870</td></tr>
+<tr><td>sin</td><td class="num">0.0306</td><td class="num">0.1093</td><td class="num">0.0830</td><td class="num">0.7936</td></tr>
+<tr><td>tanh</td><td class="num">0.0323</td><td class="num">0.1183</td><td class="num">0.0894</td><td class="num">0.7818</td></tr>
+<tr><td>sigmoid</td><td class="num">0.0434</td><td class="num">0.1542</td><td class="num">0.1164</td><td class="num">0.6374</td></tr>
+<tr><td>relu6</td><td class="num">0.0612</td><td class="num">0.1506</td><td class="num">0.1192</td><td class="num">0.7404</td></tr>
+<tr><td>relu</td><td class="num">0.0712</td><td class="num">0.1658</td><td class="num hi">0.1317</td><td class="num">0.7423</td></tr>
+</tbody>
+</table>
+</div>
+<div class="box good">
+<p><strong>This is the headline EuroSAT finding and it is a strong one.</strong> WG is simultaneously the <em>most robust</em> (ARIn 0.0713 vs 0.1317 for ReLU, a 46% reduction) and the <em>most accurate</em> (0.8125 vs 0.7423). No accuracy–robustness trade-off — it dominates. That is a rare, clean, quotable result, and it is exactly the "which design choices confer resilience" question in your title.</p>
+</div>
+
+<h4>Bit position, layer, prior scale <span class="tag t-real">real</span></h4>
+<div class="tw">
+<table>
+<thead><tr><th>Factor</th><th>Level</th><th>AAD</th><th>Softmax Diff</th><th>ARIn</th><th>Init. acc.</th></tr></thead>
+<tbody>
+<tr><td rowspan="7">Bit index</td><td>1 (MSB exponent)</td><td class="num">0.2303</td><td class="num">0.4011</td><td class="num hi">0.3319</td><td class="num">0.7564</td></tr>
+<tr><td>0 (sign)</td><td class="num">0.0138</td><td class="num">0.0865</td><td class="num">0.0631</td><td class="num">0.7564</td></tr>
+<tr><td>6</td><td class="num">0.0131</td><td class="num">0.0867</td><td class="num">0.0630</td><td class="num">0.7564</td></tr>
+<tr><td>3</td><td class="num">0.0073</td><td class="num">0.0766</td><td class="num">0.0549</td><td class="num">0.7564</td></tr>
+<tr><td>10</td><td class="num">0.0044</td><td class="num">0.0724</td><td class="num">0.0513</td><td class="num">0.7564</td></tr>
+<tr><td>15</td><td class="num">0.0044</td><td class="num">0.0723</td><td class="num">0.0513</td><td class="num">0.7564</td></tr>
+<tr><td>21</td><td class="num">0.0043</td><td class="num">0.0723</td><td class="num">0.0513</td><td class="num">0.7564</td></tr>
+<tr><td rowspan="3">Layer</td><td>fc1</td><td class="num">0.0643</td><td class="num">0.1610</td><td class="num hi">0.1269</td><td class="num">0.7564</td></tr>
+<tr><td>conv1</td><td class="num">0.0341</td><td class="num">0.1158</td><td class="num">0.0881</td><td class="num">0.7564</td></tr>
+<tr><td>conv2</td><td class="num">0.0265</td><td class="num">0.1037</td><td class="num lo">0.0782</td><td class="num">0.7564</td></tr>
+<tr><td rowspan="3">Prior scale <em>b</em></td><td>10.0</td><td class="num">0.0455</td><td class="num">0.1343</td><td class="num">0.1039</td><td class="num">0.8023</td></tr>
+<tr><td>1.0</td><td class="num">0.0426</td><td class="num">0.1265</td><td class="num">0.0979</td><td class="num">0.7935</td></tr>
+<tr><td>0.1</td><td class="num">0.0369</td><td class="num">0.1198</td><td class="num">0.0914</td><td class="num">0.6734</td></tr>
+<tr><td rowspan="3">Prior</td><td>laplace</td><td class="num">0.0427</td><td class="num">0.1439</td><td class="num">0.1098</td><td class="num">0.7829</td></tr>
+<tr><td>gaussian</td><td class="num">0.0424</td><td class="num">0.1320</td><td class="num">0.1016</td><td class="num">0.7930</td></tr>
+<tr><td>uniform</td><td class="num">0.0399</td><td class="num">0.1047</td><td class="num lo">0.0818</td><td class="num hi">0.6934</td></tr>
+</tbody>
+</table>
+</div>
+<p>Three things to note for the write-up:</p>
+<ul>
+<li><strong>Bit 1 dominates everything.</strong> ARIn 0.332 vs ≈0.05 for all mantissa bits — a factor of 6.5. Every other design factor in the paper moves ARIn by less than 0.06. This deserves one sentence in the abstract, and it is the strongest argument for a targeted mitigation (protect the exponent MSB, not the whole word).</li>
+<li><strong>Uniform prior and small <em>b</em> "win" on robustness by losing accuracy</strong> (0.693 and 0.673 init. acc.). Flag this explicitly — it is exactly the kind of confound R1 accused you of missing, and pre-empting it costs two lines.</li>
+<li><strong>fc1 is the weak point.</strong> Consistent with parameter-count-per-output reasoning; one clause of interpretation.</li>
+</ul>
+
+<h3>A.2 Proposed presentation — three changes, net zero pages</h3>
+
+<h4>Change 1 — Replace Tables 3/4/5 with one figure</h4>
+<p>Tables 3–5 are the per-injection-site breakdowns; R1 says all three overflow the column. They are a <code>bit_index × layer × param_type</code> grid, which is a <strong>heatmap</strong>, not three tables. One single-column heatmap (rows = layer×module, columns = bit index, cell = ARIn, one small panel per dataset) replaces all three, fixes the overflow complaint, and makes the bit-1 result visible instead of something the reader has to reconstruct from numbers.</p>
+<p>Space recovered: roughly 3 overflowing tables → 1 column-width figure.</p>
+
+<h4>Change 2 — One combined design-choice table, both datasets side by side</h4>
+<p>Do <em>not</em> duplicate the ShipsNet table structure for EuroSAT. Use one table with a dataset column pair:</p>
+<pre><code>                    ShipsNet (5 folds)          EuroSAT
+Design choice       ARIn  [95% CI]      Acc     ARIn    Acc
+─────────────────────────────────────────────────────────────
+Activation  WG      ....  [...., ....]  ....    0.0713  0.8125
+            RWG     ....  [...., ....]  ....    0.0732  0.7870
+            ...
+Prior       gauss   ....  [...., ....]  ....    0.1016  0.7930
+            ...
+Layer       fc1     ....  [...., ....]  ....    0.1269  —
+            ...</code></pre>
+<p>This answers R1's "multiple datasets" demand and lets the reader check consistency across datasets in one glance — which is the actual scientific question ("are the observed behaviours consistent or dataset dependent?"). Two separate tables would cost twice the space and make the comparison harder.</p>
+
+<h4>Change 3 — The variant null result becomes prose</h4>
+<p>One sentence, plus a footnote with the four ARIn values. No table.</p>
+
+<h4>Page budget ledger</h4>
+<div class="tw">
+<table class="ledger">
+<thead><tr><th>Item</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td>Tables 3, 4, 5 → single heatmap figure</td><td class="d">−0.6 to −0.9 col.</td></tr>
+<tr><td>EuroSAT variant table → one sentence + footnote</td><td class="d">−0.25 col.</td></tr>
+<tr><td>Shorten abstract + introduction (R2 request, must do anyway)</td><td class="d">−0.3 col.</td></tr>
+<tr><td>Combined design-choice table (replaces existing Table 1, adds EuroSAT columns)</td><td class="u">+0.3 col.</td></tr>
+<tr><td>EuroSAT dataset + setup paragraph</td><td class="u">+0.2 col.</td></tr>
+<tr><td>ARIn justification paragraph (R1 major item)</td><td class="u">+0.2 col.</td></tr>
+<tr><td>k-fold CI methodology + caption text</td><td class="u">+0.2 col.</td></tr>
+<tr><td><strong>Net</strong></td><td class="d"><strong>≈ −0.25 to −0.55 col.</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>You end up with slack, not a deficit — enough to absorb the fixes for equation (5) overflow and the missing figure citations.</p>
+
+<hr>
+
+<h2>Part B — Confidence intervals over ShipsNet folds 1–5</h2>
+
+<h3>B.1 The trap: what counts as one observation</h3>
+<div class="box bad">
+<p><strong>Do not compute the CI over injection rows.</strong> Each fold's SEU CSV contains ~336 rows, one per (layer, module, param type, bit) combination. Those rows are a <em>deterministic, exhaustive grid</em>, not a random sample. Taking a CI over them gives you n≈1680 across 5 folds, an interval roughly ±0.002 wide, and it would be measuring <em>how much ARIn varies between injection sites</em> — which is enormous and completely uninteresting. It says nothing about training-run variability, which is precisely what R1 asked for.</p>
+<p>A reviewer who spots this will read it as statistical window-dressing, which is worse than reporting no CI at all.</p>
+</div>
+<div class="box good">
+<p><strong>The unit of analysis is the fold.</strong> One fold = one independent training run = one observation. n = 5. That is what the reviewer's objection is about: "model performance can vary substantially depending on the initial training conditions, random seed, or stochastic optimization path."</p>
+</div>
+
+<h3>B.2 The procedure</h3>
+<p><strong>Step 1 — collapse each fold to one number.</strong> For a given cell (say, activation = WG), average ARIn over the fixed injection grid within fold <em>k</em>:</p>
+<div class="eq">x̄<sub>k</sub> = (1/M) Σ<sub>j=1..M</sub> ARIn<sub>k,j</sub>&nbsp;&nbsp;&nbsp;&nbsp; k = 1…5</div>
+<p>The grid must be <strong>identical across folds</strong> (same M, same combinations) or the fold means are not comparable. Assert this in code, don't assume it.</p>
+
+<p><strong>Step 2 — Student-<em>t</em> interval over the 5 fold means.</strong> With n = 5, the normal approximation is not usable; use the <em>t</em> distribution with 4 degrees of freedom.</p>
+<div class="eq">
+x̄ = (1/n) Σ x̄<sub>k</sub> &nbsp;&nbsp;&nbsp; s = √[ Σ(x̄<sub>k</sub> − x̄)² / (n−1) ]<br><br>
+CI<sub>95%</sub> = x̄ ± t<sub>0.975, 4</sub> · s / √n &nbsp;&nbsp;&nbsp; where t<sub>0.975, 4</sub> = <strong>2.776</strong>
+</div>
+<p>Note 2.776 vs 1.96 — with five folds the interval is 42% wider than a naive normal interval. Using 1.96 here is a common and easily-caught error.</p>
+
+<h3>B.3 Worked example <span class="tag t-illus">illustrative numbers</span></h3>
+<p>Folds 2–5 SEU results are not computed yet, so the values below are plausible stand-ins to demonstrate the arithmetic. The <em>method</em> is what to reuse; substitute real fold means when available.</p>
+
+<h4>Unpaired: BNN and DNN each on their own</h4>
+<div class="tw">
+<table>
+<thead><tr><th>Fold</th><th>BNN mean ARIn</th><th>DNN mean ARIn</th><th>Difference</th></tr></thead>
+<tbody>
+<tr><td>1</td><td class="num">0.0398</td><td class="num">0.0487</td><td class="num">0.0089</td></tr>
+<tr><td>2</td><td class="num">0.0447</td><td class="num">0.0533</td><td class="num">0.0086</td></tr>
+<tr><td>3</td><td class="num">0.0521</td><td class="num">0.0611</td><td class="num">0.0090</td></tr>
+<tr><td>4</td><td class="num">0.0405</td><td class="num">0.0492</td><td class="num">0.0087</td></tr>
+<tr><td>5</td><td class="num">0.0479</td><td class="num">0.0567</td><td class="num">0.0088</td></tr>
+<tr style="border-top:2px solid var(--rule)"><td><strong>mean x̄</strong></td><td class="num"><strong>0.0450</strong></td><td class="num"><strong>0.0538</strong></td><td class="num"><strong>0.0088</strong></td></tr>
+<tr><td><em>s</em> (ddof=1)</td><td class="num">0.00515</td><td class="num">0.00522</td><td class="num">0.000158</td></tr>
+<tr><td>s/√5</td><td class="num">0.00230</td><td class="num">0.00234</td><td class="num">0.0000707</td></tr>
+<tr><td>± 2.776·s/√5</td><td class="num">0.0064</td><td class="num">0.0065</td><td class="num">0.0002</td></tr>
+<tr><td><strong>95% CI</strong></td><td class="num">[0.0386, 0.0514]</td><td class="num">[0.0473, 0.0603]</td><td class="num">[0.0086, 0.0090]</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p><strong>The two marginal intervals overlap</strong> — [0.0386, 0.0514] vs [0.0473, 0.0603]. Read naively, that says "no significant difference between BNN and DNN", and you would have handed R1 the paper's conclusion on a plate.</p>
+</div>
+<div class="box good">
+<p><strong>The paired interval on the per-fold difference does not contain zero</strong> — [0.0086, 0.0090]. The BNN is more robust, consistently, on every single fold. The marginal CIs are wide because <em>folds differ in difficulty</em>, and that fold effect is shared by both models, so it cancels in the difference.</p>
+<p><strong>Report the paired difference.</strong> It is the correct analysis (all models see the same 5 splits — this is a matched design, not two independent samples), it is far more powerful at n=5, and it directly answers "are the reported differences genuine or artifacts of a single run?"</p>
+</div>
+
+<h3>B.4 Implementation</h3>
+<p><code>src/evaluation/aggregate.py</code> already anticipates a <code>fold</code> column (see <code>n_folds</code> in <code>aggregate_across_folds</code>), but the SEU CSVs do not currently carry one — it has to be attached at load time from the directory path. It also computes <code>std</code> only; the CI half-width and the paired path need adding.</p>
+
+<pre><code>"""Fold-level confidence intervals for SEU robustness metrics."""
+import re
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+from src.evaluation.aggregate import load_seu_results, add_robustness_metrics
+
+FOLD_RE = re.compile(r"fold(\d+)")
+
+
+def attach_fold(df: pd.DataFrame) -> pd.DataFrame:
+    """Derive the fold index from source_file; fold 1 is the top-level split."""
+    out = df.copy()
+    out["fold"] = (
+        out["source_file"].str.extract(FOLD_RE, expand=False)
+        .fillna("1").astype(int)
+    )
+    return out
+
+
+def fold_means(df: pd.DataFrame, group_cols: list[str],
+               metric: str = "arin") -> pd.DataFrame:
+    """Collapse each (group, fold) to a single mean over the injection grid.
+
+    Raises:
+        ValueError: If the injection grid differs across folds, which would
+            make the fold means incomparable.
+    """
+    valid = df[df[metric].notna()]
+    counts = valid.groupby(group_cols + ["fold"]).size()
+    if counts.groupby(level=list(range(len(group_cols)))).nunique().gt(1).any():
+        raise ValueError("injection grid differs across folds; cannot compare")
+    return valid.groupby(group_cols + ["fold"])[metric].mean().reset_index()
+
+
+def ci_from_folds(values: np.ndarray, alpha: float = 0.05) -> dict:
+    """Student-t CI treating each fold as one independent observation."""
+    n = len(values)
+    if n < 2:
+        raise ValueError(f"need >= 2 folds, got {n}")
+    mean = float(values.mean())
+    sem = float(values.std(ddof=1) / np.sqrt(n))
+    t_crit = float(stats.t.ppf(1 - alpha / 2, df=n - 1))
+    half = t_crit * sem
+    return {"mean": mean, "sd": float(values.std(ddof=1)), "sem": sem,
+            "t_crit": t_crit, "ci_low": mean - half, "ci_high": mean + half,
+            "half_width": half, "n_folds": n}
+
+
+def paired_ci(a: pd.DataFrame, b: pd.DataFrame,
+              metric: str = "arin", alpha: float = 0.05) -> dict:
+    """CI on the per-fold difference b - a. Folds must align one-to-one.
+
+    Use this for any two-condition claim (BNN vs DNN, WG vs ReLU): the fold
+    effect is shared and cancels, which matters enormously at n=5.
+    """
+    merged = a.merge(b, on="fold", suffixes=("_a", "_b"))
+    if len(merged) != len(a) or len(merged) != len(b):
+        raise ValueError("folds do not align one-to-one between conditions")
+    diff = (merged[f"{metric}_b"] - merged[f"{metric}_a"]).to_numpy()
+    out = ci_from_folds(diff, alpha)
+    out["significant"] = bool(out["ci_low"] > 0 or out["ci_high"] &lt; 0)
+    return out
+
+
+if __name__ == "__main__":
+    df = load_seu_results("results/shipsnet/seu")
+    df = df[~df["source_file"].str.contains("_archive")]
+    df = add_robustness_metrics(attach_fold(df))
+
+    per_fold = fold_means(df, ["variant", "activation_fn", "prior"])
+    rows = []
+    for keys, g in per_fold.groupby(["variant", "activation_fn", "prior"]):
+        rows.append({**dict(zip(["variant", "activation_fn", "prior"], keys)),
+                     **ci_from_folds(g["arin"].to_numpy())})
+    print(pd.DataFrame(rows).round(4).to_string(index=False))</code></pre>
+
+<h3>B.5 How to report it in the paper</h3>
+<p><strong>In the table.</strong> One column, not three. <code>0.0450 [0.0386, 0.0514]</code> is more informative than <code>0.0450 ± 0.0051</code> and takes the same width. Do not print mean, SD, SEM <em>and</em> CI — that is four numbers saying one thing, and it costs column width you do not have.</p>
+
+<p><strong>In the caption.</strong> The caption must state the unit of analysis or the CI is uninterpretable. Something like:</p>
+<div class="box">
+<p style="font-size:.9rem"><em>"Values are means over 5-fold cross-validation with 95% confidence intervals (Student-<em>t</em>, 4 d.f.). Each fold contributes one observation, obtained by averaging the metric over all M = 336 injection sites for that fold; intervals therefore reflect variability across independent training runs, not across injection sites."</em></p>
+</div>
+
+<p><strong>For the BNN-vs-DNN claim.</strong> Report the paired difference with its CI in the text, e.g. <em>"the BNN reduces ARIn by 0.0088 (95% CI [0.0086, 0.0090]), consistently across all five folds"</em>. This is the single sentence that answers R1's central methodological objection, and it costs one line.</p>
+
+<p><strong>If you have room for a figure.</strong> A forest plot — one row per design choice, point = fold mean, whiskers = 95% CI, vertical reference line at the baseline — communicates all of this in a single column and replaces a table entirely. Only do this if the heatmap swap above leaves you the space.</p>
+
+<h3>B.6 Two caveats to state, not hide</h3>
+<div class="box warn">
+<p><strong>k = 5, not the k = 10 R1 suggested.</strong> Say so explicitly and justify it on compute cost (252 trained models per fold × the SEU grid). A stated, costed deviation reads as engineering judgement; an unexplained one reads as cutting corners.</p>
+<p><strong>Fold 1 is the original 80/20 split.</strong> It was pinned as fold 1 so the existing 252 models stayed reusable — which means fold 1 is not drawn from the same k-fold partition scheme as folds 2–5, and its test set may overlap other folds' training data. Either state this in the methodology, or exclude fold 1 and run a genuine fold and use n = 5 clean folds. The first is cheaper; the second is safer if a reviewer looks closely.</p>
+<p><strong>The MC noise floor.</strong> Per <code>docs/analysis/seu_metric_noise_floor.md</code>, roughly half the BNN softmax-difference signal is Monte-Carlo sampling noise, and the DNN softmax difference is affected by a double-softmax bug. A CI that is narrower than the noise floor is not evidence of anything. Fix the DNN metric before quoting any BNN-vs-DNN interval — otherwise the paired CI above will be precise and wrong.</p>
+</div>
+
+<hr>
+
+<h2>Summary of recommendations</h2>
+<ol>
+<li><strong>EuroSAT lead finding is the activation function</strong>, not the model variant. WG dominates ReLU on both robustness (−46% ARIn) and accuracy (+7 pts). The variant grid is a null result — one sentence.</li>
+<li><strong>Bit 1 dominates every other factor by 6.5×.</strong> Promote it to the abstract; it motivates targeted exponent protection as future work, which also fixes R1's "conclusions/future work not convincing".</li>
+<li><strong>Fold Tables 3–5 into one heatmap figure.</strong> Fixes the overflow complaint and pays for the EuroSAT content.</li>
+<li><strong>One combined two-dataset table</strong>, not two parallel tables.</li>
+<li><strong>CI unit of analysis is the fold (n = 5, t = 2.776)</strong>, never the injection row.</li>
+<li><strong>Report paired per-fold differences</strong> for any two-condition claim — marginal CIs will overlap and understate your result.</li>
+<li><strong>Fix the DNN softmax-difference bug first.</strong> Everything above is downstream of that metric being correct.</li>
+</ol>
+
+<p class="foot">Generated for ICAART 2026 Paper #90 revision. EuroSAT figures computed from <code>results/eurosat/seu_clean/</code> (42,336 rows, 3,024 degenerate excluded). ShipsNet fold values are illustrative pending folds 2–5 SEU computation.</p>
