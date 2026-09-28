@@ -1,0 +1,421 @@
+<title>EuroSAT SEU Robustness — Bayesian CNN grid</title>
+<style>
+:root{
+  --paper:#F4F6F5; --surface:#FFFFFF; --surface-2:#EDF1EF;
+  --ink:#131A18; --ink-2:#46534F; --ink-3:#7A8783;
+  --rule:#DBE3E0; --rule-strong:#B9C6C2;
+  --accent:#0C6B60; --accent-ink:#0A554C; --accent-wash:rgba(12,107,96,.13);
+  --critical:#A83A2B; --critical-wash:rgba(168,58,43,.11);
+  --shadow:0 1px 2px rgba(19,26,24,.06), 0 8px 24px -18px rgba(19,26,24,.30);
+  --display:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1413; --surface:#151D1B; --surface-2:#1B2523;
+    --ink:#E7EDEA; --ink-2:#A8B5B1; --ink-3:#77847F;
+    --rule:#25322F; --rule-strong:#3A4A46;
+    --accent:#4FBFAE; --accent-ink:#77D3C4; --accent-wash:rgba(79,191,174,.16);
+    --critical:#E08573; --critical-wash:rgba(224,133,115,.14);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1413; --surface:#151D1B; --surface-2:#1B2523;
+  --ink:#E7EDEA; --ink-2:#A8B5B1; --ink-3:#77847F;
+  --rule:#25322F; --rule-strong:#3A4A46;
+  --accent:#4FBFAE; --accent-ink:#77D3C4; --accent-wash:rgba(79,191,174,.16);
+  --critical:#E08573; --critical-wash:rgba(224,133,115,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -18px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:64rem; margin:0 auto; padding:0 1.5rem 6rem}
+
+/* ---------- masthead ---------- */
+.masthead{padding:3.5rem 0 1.75rem; border-bottom:1px solid var(--rule-strong)}
+.eyebrow{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--accent-ink); margin:0 0 1rem;
+}
+h1{
+  font-family:var(--display); font-weight:600; font-size:clamp(2rem,5vw,3rem);
+  line-height:1.1; letter-spacing:-.015em; margin:0 0 .75rem; text-wrap:balance;
+}
+.standfirst{
+  font-size:1.06rem; color:var(--ink-2); max-width:56ch; margin:0 0 1.5rem;
+}
+.provenance{
+  display:flex; flex-wrap:wrap; gap:.4rem 1.5rem;
+  font-family:var(--mono); font-size:.75rem; color:var(--ink-3);
+}
+.provenance b{color:var(--ink-2); font-weight:600}
+
+/* ---------- slice control ---------- */
+.toolbar{
+  position:sticky; top:0; z-index:20; background:var(--paper);
+  border-bottom:1px solid var(--rule); padding:.75rem 0;
+  display:flex; flex-wrap:wrap; align-items:center; gap:.75rem 1.25rem;
+}
+.toolbar-label{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink-3);
+}
+.seg{display:flex; border:1px solid var(--rule-strong); border-radius:2px; overflow:hidden}
+.seg button{
+  font:inherit; font-family:var(--mono); font-size:.8rem;
+  padding:.34rem .8rem; border:0; border-right:1px solid var(--rule-strong);
+  background:var(--surface); color:var(--ink-2); cursor:pointer;
+}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--surface-2); color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--paper)}
+.seg button:focus-visible{outline:2px solid var(--accent-ink); outline-offset:-2px}
+.slice-note{font-size:.82rem; color:var(--ink-3); margin-left:auto}
+
+/* ---------- stat strip ---------- */
+.stats{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule);
+  margin:2rem 0 3rem; box-shadow:var(--shadow);
+}
+.stat{background:var(--surface); padding:1.1rem 1.15rem}
+.stat.hero{background:var(--surface)}
+.stat dt{
+  font-family:var(--mono); font-size:.68rem; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 .45rem;
+}
+.stat dd{
+  margin:0; font-family:var(--display); font-size:1.9rem; line-height:1;
+  font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+}
+.stat.hero dd{color:var(--accent-ink); font-size:2.3rem}
+.stat small{display:block; margin-top:.4rem; font-size:.74rem; color:var(--ink-3); font-family:var(--body)}
+
+/* ---------- sections ---------- */
+section{margin:0 0 3.25rem; scroll-margin-top:4rem}
+.sec-head{display:flex; align-items:baseline; gap:.75rem; margin:0 0 .3rem}
+.sec-num{
+  font-family:var(--mono); font-size:.75rem; color:var(--accent-ink);
+  letter-spacing:.08em; padding-top:.2rem;
+}
+h2{
+  font-family:var(--display); font-weight:600; font-size:1.5rem;
+  letter-spacing:-.01em; margin:0; text-wrap:balance;
+}
+.sec-note{color:var(--ink-2); font-size:.93rem; margin:.35rem 0 1.1rem; max-width:62ch}
+
+/* ---------- tables ---------- */
+.tablewrap{
+  overflow-x:auto; border:1px solid var(--rule); background:var(--surface);
+  box-shadow:var(--shadow);
+}
+table{border-collapse:collapse; width:100%; min-width:44rem; font-size:.9rem}
+caption{
+  caption-side:top; text-align:left; padding:.7rem .95rem;
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink-3);
+  border-bottom:1px solid var(--rule);
+}
+th,td{padding:.55rem .95rem; text-align:right; border-bottom:1px solid var(--rule)}
+thead th{
+  font-family:var(--mono); font-weight:500; font-size:.72rem; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-3); white-space:nowrap;
+  border-bottom:1px solid var(--rule-strong);
+}
+th[scope="row"],thead th:first-child,td:first-child{text-align:left}
+th[scope="row"]{font-weight:500; white-space:nowrap}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:.85rem}
+.dim{color:var(--ink-3)}
+td.meter{min-width:11rem}
+.meterbox{display:flex; align-items:center; gap:.6rem; justify-content:flex-end}
+.track{
+  flex:1; height:8px; background:var(--accent-wash); border-radius:0 4px 4px 0;
+  max-width:7rem; overflow:hidden;
+}
+.track i{display:block; height:100%; background:var(--accent); border-radius:0 4px 4px 0}
+tr.flag .track i{background:var(--critical)}
+tr.flag .track{background:var(--critical-wash)}
+tr.flag th[scope="row"]{color:var(--critical)}
+.chip{
+  display:inline-block; margin-left:.5rem; padding:.05rem .4rem;
+  font-family:var(--mono); font-size:.64rem; letter-spacing:.06em;
+  text-transform:uppercase; border:1px solid currentColor; border-radius:2px;
+  color:var(--accent-ink); vertical-align:.08em;
+}
+.chip.warn{color:var(--critical)}
+.foot{
+  font-size:.8rem; color:var(--ink-3); margin:.6rem 0 0; max-width:62ch;
+}
+
+/* ---------- notes ---------- */
+.notes{border-top:1px solid var(--rule-strong); padding-top:1.75rem}
+.notes ol{padding-left:1.1rem; margin:0; display:flex; flex-direction:column; gap:.8rem}
+.notes li{color:var(--ink-2); font-size:.92rem; max-width:64ch}
+.notes b{color:var(--ink)}
+code{
+  font-family:var(--mono); font-size:.86em; background:var(--surface-2);
+  padding:.08rem .3rem; border-radius:2px; color:var(--ink-2);
+}
+.formula{
+  font-family:var(--mono); font-size:.82rem; color:var(--ink-2);
+  background:var(--surface); border-left:2px solid var(--accent);
+  padding:.7rem .95rem; margin:1.25rem 0 0; overflow-x:auto;
+}
+@media (max-width:640px){
+  .masthead{padding-top:2.25rem}
+  .slice-note{margin-left:0; flex-basis:100%}
+}
+@media (prefers-reduced-motion:no-preference){
+  .track i{transition:width .35s ease}
+}
+</style>
+
+<div class="wrap">
+<header class="masthead">
+  <p class="eyebrow">Single-event upsets · Bayesian CNN · EuroSAT 10-class</p>
+  <h1>Bit-flip robustness across the full EuroSAT variational grid</h1>
+  <p class="standfirst">Every FP32 single-bit fault injected into 252 trained Bayesian CNNs, reduced to the
+  three robustness measures used in the paper. Deduplicated source: <code>seu_clean</code>.</p>
+  <div class="provenance">
+    <span><b>252</b> model configs</span>
+    <span><b>42,336</b> injections</span>
+    <span><b>39,312</b> valid</span>
+    <span><b>3,024</b> degenerate, excluded</span>
+    <span>results/eurosat/seu_clean</span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <span class="toolbar-label">Prior scale</span>
+  <div class="seg" role="group" aria-label="Prior scale slice">
+    <button type="button" data-slice="b0.1">b = 0.1</button>
+    <button type="button" data-slice="b1" aria-pressed="true">b = 1.0</button>
+    <button type="button" data-slice="b10">b = 10</button>
+    <button type="button" data-slice="all">all b pooled</button>
+  </div>
+  <span class="slice-note" id="sliceNote"></span>
+</div>
+
+<dl class="stats" id="stats"></dl>
+
+<section id="variant">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Model variant</h2></div>
+  <p class="sec-note">The four architectural variants: base, spike-suppressing SmartPool, dropout
+  (p = 0.5), and weight decay (λ = 1e-4). Each row averages over all activations and priors in the slice.</p>
+  <div class="tablewrap"><table data-table="variant" data-caption="Robustness by model variant"></table></div>
+  <p class="foot">The variant spread is far narrower than the run-to-run noise floor documented in
+  <code>docs/analysis/seu_metric_noise_floor.md</code> — read the ordering as indistinguishable, not as a ranking.</p>
+</section>
+
+<section id="prior">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Prior distribution</h2></div>
+  <p class="sec-note">Gaussian and Laplace priors expose a location and a scale parameter; the uniform
+  prior exposes a low bound and a width. Both parameterisations are injected.</p>
+  <div class="tablewrap"><table data-table="prior" data-caption="Robustness by prior family"></table></div>
+</section>
+
+<section id="param">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Centre vs. spread parameters</h2></div>
+  <p class="sec-note">Which half of the variational parameter is hit. <code>locs</code>/<code>lows</code>
+  are centre parameters; <code>scales</code>/<code>widths</code> are spread parameters. A flip that drives a
+  spread parameter negative is undefined and is excluded from every statistic on this page.</p>
+  <div class="tablewrap"><table data-table="param_type" data-caption="Robustness by variational parameter"></table></div>
+</section>
+
+<section id="activation">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Activation function</h2></div>
+  <p class="sec-note">Seven activations, including the two weighted-Gaussian variants (WG, RWG) whose
+  bounded response is the reason they were introduced.</p>
+  <div class="tablewrap"><table data-table="activation" data-caption="Robustness by activation function"></table></div>
+</section>
+
+<section id="site">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Injection site</h2></div>
+  <p class="sec-note">Where in the network the upset lands — by layer, and by layer × parameter kind.</p>
+  <div class="tablewrap"><table data-table="layer" data-caption="Robustness by layer"></table></div>
+  <div class="tablewrap" style="margin-top:1.25rem"><table data-table="layer_module" data-caption="Robustness by layer and weight/bias"></table></div>
+</section>
+
+<section id="bit">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Bit position</h2></div>
+  <p class="sec-note">IEEE-754 FP32 layout: bit 0 is the sign, bits 1–8 the exponent, bits 9–31 the
+  mantissa. Bit 1 is the exponent MSB.</p>
+  <div class="tablewrap"><table data-table="bit" data-caption="Robustness by flipped bit index"></table></div>
+  <p class="foot">Bit 0 has half the sample count of the other positions: a sign flip on a spread
+  parameter is always degenerate, so those rows are excluded.</p>
+</section>
+
+<section id="origbit">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Original bit value</h2></div>
+  <p class="sec-note">Whether the upset raised a 0 to a 1 or cleared a 1 to a 0.</p>
+  <div class="tablewrap"><table data-table="orig_bit" data-caption="Robustness by pre-flip bit value"></table></div>
+</section>
+
+<section id="scale">
+  <div class="sec-head"><span class="sec-num">08</span><h2>Prior scale</h2></div>
+  <p class="sec-note">Cross-slice comparison — this table always pools every variant, prior and
+  activation at each value of <code>b</code>, and does not respond to the selector above.</p>
+  <div class="tablewrap"><table data-table="prior_b" data-caption="Robustness by prior scale b (all configs)"></table></div>
+</section>
+
+<section class="notes">
+  <div class="sec-head"><span class="sec-num">·</span><h2>How to read these numbers</h2></div>
+  <div class="formula">AAAD = mean |acc_after − acc_before| &nbsp;·&nbsp; ASD = mean softmax difference &nbsp;·&nbsp; ARIn = √((AAAD² + ASD²) / 2)</div>
+  <ol style="margin-top:1.25rem">
+    <li><b>ARIn is computed from the aggregated means</b>, matching the paper, not averaged row-wise.
+    The two differ; row-wise ARIn runs higher.</li>
+    <li><b>b = 1.0 is the primary slice.</b> It is the grid that matches the paper's single-scale BNN
+    sweep, and recomputing ShipsNet fold-1 at b = 1.0 reproduces the paper's Table 3 BNN row exactly.
+    The other slices are a sensitivity check.</li>
+    <li><b>3,024 injections are degenerate</b> — a bit flip that makes a scale or width negative has no
+    defined posterior. They are excluded from all means and counted separately, never silently dropped.</li>
+    <li><b>One run per config, unseeded MC-10 inference.</b> Run-to-run variance is unquantified;
+    treat aggregate differences below ≈0.005 ARIn as noise.</li>
+    <li><b>No deterministic-CNN baseline exists for EuroSAT.</b> Every BNN-vs-DNN claim in the paper is
+    untestable on this dataset — nothing here confirms or refutes it.</li>
+    <li><b>Initial accuracy is the best-checkpoint MC-10 accuracy</b> read from the SEU CSVs, not the
+    last-epoch test accuracy in the training logs.</li>
+  </ol>
+</section>
+</div>
+
+<script id="seuData" type="application/json">/*__DATA__*/</script>
+<script>
+const DATA = JSON.parse(document.getElementById("seuData").textContent);
+
+const LABELS = {
+  relu:"ReLU", relu6:"ReLU6", sigmoid:"Sigmoid", tanh:"Tanh", sin:"Sinusoidal",
+  _actWG:"WG (weighted Gaussian)", _actRWG:"RWG (random weighted Gaussian)",
+  gaussian:"Gaussian", laplace:"Laplace", uniform:"Uniform",
+  locs:"locs — centre (Gaussian, Laplace)", scales:"scales — spread (Gaussian, Laplace)",
+  lows:"lows — centre (Uniform)", widths:"widths — spread (Uniform)",
+  conv1:"conv1", conv2:"conv2", fc1:"fc1", weight:"weight", bias:"bias",
+  "0":"0", "1":"1"
+};
+const ORDER = {
+  prior:["gaussian","laplace","uniform"],
+  activation:["relu","relu6","sigmoid","tanh","sin","_actWG","_actRWG"],
+  param_type:["locs","scales","lows","widths"],
+  layer:["conv1","conv2","fc1"],
+  bit:["0","1","3","6","10","15","21"],
+  orig_bit:["0","1"]
+};
+const KEYCOL = {
+  variant:"variant_label", prior:"prior", activation:"activation_fn",
+  param_type:"param_type", layer:"location_layer", bit:"bit_index",
+  orig_bit:"original_bit_condition", prior_b:"prior_b", layer_module:"location_layer"
+};
+const HEADCOL = {
+  variant:"Variant", prior:"Prior", activation:"Activation", param_type:"Parameter",
+  layer:"Layer", bit:"Bit", orig_bit:"Pre-flip value", prior_b:"Prior scale b",
+  layer_module:"Layer"
+};
+const BITNOTE = {
+  "0":"sign", "1":"exponent MSB", "3":"exponent", "6":"exponent",
+  "10":"mantissa", "15":"mantissa", "21":"mantissa"
+};
+const ORIGNOTE = {"0":"0 → 1 flip", "1":"1 → 0 flip"};
+
+const f4 = v => v.toFixed(4);
+const pct = v => (v * 100).toFixed(1) + "%";
+const int = v => v.toLocaleString("en-US");
+
+function rowLabel(table, r) {
+  if (table === "layer_module") return LABELS[r.location_layer] + " · " + LABELS[r.location_module];
+  if (table === "prior_b") return "b = " + (+Number(r.prior_b).toFixed(4)).toString();
+  const raw = r[KEYCOL[table]];
+  return LABELS[raw] ?? raw;
+}
+
+function sortRows(table, rows) {
+  const order = ORDER[table];
+  if (!order) return rows;
+  const k = KEYCOL[table];
+  return [...rows].sort((a, b) => order.indexOf(String(a[k])) - order.indexOf(String(b[k])));
+}
+
+function renderTable(el, table, rows) {
+  rows = sortRows(table, rows);
+  const maxArin = Math.max(...rows.map(r => r.arin));
+  const minArin = Math.min(...rows.map(r => r.arin));
+  const single = rows.length < 3;
+
+  const head = `<caption>${el.dataset.caption}</caption><thead><tr>
+    <th scope="col">${HEADCOL[table]}</th>
+    <th scope="col">Init. acc.</th>
+    <th scope="col">AAAD</th>
+    <th scope="col">ASD</th>
+    <th scope="col">ARIn — lower is more robust</th>
+    <th scope="col">n</th></tr></thead>`;
+
+  const body = rows.map(r => {
+    const flag = r.arin > 0.2;
+    const best = !single && r.arin === minArin;
+    let note = "";
+    if (table === "bit") note = BITNOTE[String(r.bit_index)] ?? "";
+    if (table === "orig_bit") note = ORIGNOTE[String(r.original_bit_condition)] ?? "";
+    const noteHtml = note ? ` <span class="dim">${note}</span>` : "";
+    const chip = flag ? '<span class="chip warn">catastrophic</span>'
+               : best ? '<span class="chip">most robust</span>' : "";
+    const excl = r.n_excluded ? `<br><span class="dim" style="font-size:.72rem">${int(r.n_excluded)} excluded</span>` : "";
+    return `<tr class="${flag ? "flag" : ""}">
+      <th scope="row">${rowLabel(table, r)}${noteHtml}${chip}</th>
+      <td class="num dim">${pct(r.init_acc)}</td>
+      <td class="num">${f4(r.aaad)}</td>
+      <td class="num">${f4(r.asd)}</td>
+      <td class="num meter"><span class="meterbox"><span>${f4(r.arin)}</span>
+        <span class="track"><i style="width:${(r.arin / maxArin * 100).toFixed(1)}%"></i></span></span></td>
+      <td class="num dim">${int(r.n)}${excl}</td></tr>`;
+  }).join("");
+
+  el.innerHTML = head + "<tbody>" + body + "</tbody>";
+}
+
+const SLICE_NOTE = {
+  "b1": "Primary slice — matches the paper's single-scale BNN grid.",
+  "b0.1": "Tight priors: lowest accuracy, lowest absolute error.",
+  "b10": "Wide priors: highest accuracy, least robust.",
+  "all": "All 252 configs pooled across the three prior scales."
+};
+
+function render(sliceKey) {
+  const slice = DATA.slices[sliceKey];
+  const o = slice.overall;
+  document.getElementById("stats").innerHTML = `
+    <div class="stat"><dt>Mean initial accuracy</dt><dd>${pct(o.init_acc)}</dd>
+      <small>MC-10, best checkpoint</small></div>
+    <div class="stat"><dt>AAAD</dt><dd>${f4(o.aaad)}</dd>
+      <small>mean accuracy shift</small></div>
+    <div class="stat"><dt>ASD</dt><dd>${f4(o.asd)}</dd>
+      <small>mean softmax difference</small></div>
+    <div class="stat hero"><dt>ARIn</dt><dd>${f4(o.arin)}</dd>
+      <small>aggregate robustness index</small></div>
+    <div class="stat"><dt>Valid injections</dt><dd>${int(o.n)}</dd>
+      <small>${int(o.n_configs)} configs · ${int(o.n_excluded)} excluded</small></div>`;
+  document.getElementById("sliceNote").textContent = SLICE_NOTE[sliceKey];
+
+  document.querySelectorAll("table[data-table]").forEach(el => {
+    const t = el.dataset.table;
+    const rows = t === "prior_b" ? DATA.slices.all.prior_b : slice[t];
+    if (rows && rows.length) renderTable(el, t, rows);
+  });
+}
+
+document.querySelectorAll(".seg button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".seg button").forEach(b => b.removeAttribute("aria-pressed"));
+    btn.setAttribute("aria-pressed", "true");
+    render(btn.dataset.slice);
+  });
+});
+
+render("b1");
+</script>
