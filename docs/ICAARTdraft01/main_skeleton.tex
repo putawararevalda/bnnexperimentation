@@ -108,9 +108,7 @@
 %  WG/RWG). Leaving them in is a factual inconsistency across datasets.
 % =====================================================================
 \abstract{
-Bayesian Neural Networks (BNNs) naturally model uncertainty in safety-critical environments, yet their resilience against hardware-induced Single Event Upsets (SEUs) remains under-studied compared to input perturbations. This paper presents the first systematic evaluation of BNN architectural choices under internal weight and bias bit-flips. We evaluate an exhaustive SEU grid across two satellite imaging datasets (ShipsNet, EuroSAT) using 5-fold cross-validation. To capture both failure modes, we measure degradation using the Aggregate Robustness Index (ARIn), combining accuracy drop and confidence collapse. 
-
-Our findings resolve previous metric ambiguities: deterministic CNNs are strictly more robust to parameter corruption than BNNs, and structural regularizers offer no measurable SEU defense. Instead, the activation function dictates resilience. The bounded Weighted Gaussian activation simultaneously improves EuroSAT robustness by 46\% (ARIn 0.0713 vs.\ 0.1317 for ReLU) and accuracy (+7\%). Crucially, we isolate the IEEE-754 exponent MSB (bit 1) as the catastrophic failure mode across all architectures (ARIn 0.332 vs.\ $\approx$0.05 for mantissa bits). These results prove that targeted exponent-hardening and bounded activations provide massive resilience against SEUs, offering a highly efficient alternative to full-word error correction for spaceborne AI.
+Bayesian Neural Networks (BNNs) naturally model uncertainty in safety-critical environments, yet their resilience against hardware-induced Single Event Upsets (SEUs) remains under-studied compared to input perturbations. This paper presents the first systematic evaluation of BNN architectural choices under internal weight and bias bit-flips. We evaluate an exhaustive SEU grid across two satellite imaging datasets (ShipsNet, EuroSAT) using 5-fold cross-validation. To capture both failure modes, we measure degradation using the Aggregate Robustness Index (ARIn), combining accuracy drop and confidence collapse. Our findings resolve previous metric ambiguities: deterministic CNNs are strictly more robust to parameter corruption than BNNs, and structural regularizers offer no measurable SEU defense. Instead, the activation function dictates resilience. The bounded Weighted Gaussian activation simultaneously improves EuroSAT robustness by 46\% (ARIn 0.0713 vs.\ 0.1317 for ReLU) and accuracy (+7\%). Crucially, we isolate the IEEE-754 exponent MSB (bit 1) as the catastrophic failure mode across all architectures (ARIn 0.332 vs.\ $\approx$0.05 for mantissa bits). These results prove that targeted exponent-hardening and bounded activations provide massive resilience against SEUs, offering a highly efficient alternative to full-word error correction for spaceborne AI.
 }
 
 \onecolumn \maketitle \normalsize \setcounter{footnote}{0} \vfill
@@ -222,12 +220,7 @@ grid, and the interval is then taken over those $k$ fold means,
 \qquad t_{0.975,\,4} = 2.776
 \end{equation}
 
-\todoitem{R1-3}{State explicitly that intervals are NOT taken over
-injection sites --- those are an exhaustive deterministic grid, not a
-sample, and an interval over them would measure site heterogeneity rather
-than training-run variability. Two-condition claims (BNN vs.\ DNN,
-WG vs.\ ReLU) use the PAIRED per-fold difference, since all models see the
-same five splits and the shared fold effect cancels.}
+Crucially, confidence intervals are computed over the $n=5$ cross-validation folds, not over the individual SEU injection sites. The injection sites constitute an exhaustive deterministic grid rather than a random sample; taking an interval over them would incorrectly measure the model's site-to-site heterogeneity rather than its training-run variability. Furthermore, when evaluating two-condition claims (such as comparing BNN versus deterministic CNN baselines, or Weighted Gaussian versus ReLU activations), we analyze the paired per-fold difference. Because all models are trained and evaluated on the exact same five data splits, paired testing ensures that the shared fold-difficulty effect cancels out, yielding a statistically rigorous comparison.
 
 % =====================================================================
 \section{Results}
@@ -397,14 +390,14 @@ We scope these claims to the bounds of our experimental design. Our findings rel
 %    [ ] R1-9  every table cited in text
 %
 %  CONTENT
-%    [ ] R1-1  ARIn motivated AND its ASD-dominance conceded
-%    [ ] R1-2  EuroSAT integrated throughout, not bolted on
-%    [ ] R1-3  k-fold protocol stated; CI unit of analysis explicit
+%    [x] R1-1  ARIn motivated AND its ASD-dominance conceded
+%    [x] R1-2  EuroSAT integrated throughout, not bolted on
+%    [x] R1-3  k-fold protocol stated; CI unit of analysis explicit
 %    [ ] R1-4  AAD/ASD disagreement addressed, claim scoped
 %    [ ] R1-10 variability reported for every aggregate
-%    [ ] R1-12 SEU counts internally consistent
-%    [ ] R2-1  novelty stated as a numbered list in the introduction
-%    [ ] R2-2  problem formalized; SOTA covered
+%    [x] R1-12 SEU counts internally consistent
+%    [x] R2-1  novelty stated as a numbered list in the introduction
+%    [x] R2-2  problem formalized; SOTA covered
 %    [ ] R2-3  ablation present and labelled
 %    [ ] R2-4  hyperparameter sensitivity (prior scale b covers part of
 %              this; MC sample count S=10 is NOT yet analysed)
